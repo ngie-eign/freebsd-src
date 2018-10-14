@@ -30,6 +30,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/param.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/uio.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -158,23 +159,58 @@ setup_tcp_client(int domain, int port)
 }
 
 static void
-verify_source_and_dest(int fd, off_t offset, size_t length __unused)
+verify_source_and_dest(const char* dest_filename, int src_fd, off_t offset,
+    size_t nbytes)
 {
-#if 0
 	void *dest_pointer, *src_pointer;
-#endif
+	struct stat dest_st, src_st;
+	size_t length;
+	int dest_fd;
 
-	printf("huh?\n");
-	sleep(1);
+	printf("=== DEST FILE ===\n");
+	atf_utils_cat_file(dest_filename, "dest_file: ");
+	printf("=== DEST FILE ===\n");
 
-	ATF_REQUIRE_EQ_MSG(0, lseek(fd, offset, SEEK_SET),
+	dest_fd = open(dest_filename, O_RDONLY);
+	ATF_REQUIRE_MSG(dest_fd != -1, "open failed");
+
+	ATF_REQUIRE_EQ_MSG(0, fstat(dest_fd, &dest_st),
+	    "fstat(dest_fd) failed: %s", strerror(errno));
+
+	ATF_REQUIRE_EQ_MSG(0, fstat(src_fd, &src_st),
+	    "fstat(src_fd) failed: %s", strerror(errno));
+
+	/*
+	 * Per sendfile(2), "send the whole file" (paraphrased), which means
+	 * that we need to grab the file size, as passing in length=0 with
+	 * mmap(2) will result in a failure with EINVAL, as length=0 is invalid.
+	 */
+	length = (nbytes == 0) ? (size_t)(src_st.st_size - offset) : nbytes;
+
+	ATF_REQUIRE_EQ_MSG(dest_st.st_size, length,
+	    "number of bytes written out to %s (%ju) don't match the expected "
+	    "number of bytes (%ju)", dest_filename, dest_st.st_size, length);
+
+	ATF_REQUIRE_EQ_MSG(0, lseek(src_fd, offset, SEEK_SET),
 	    "lseek failed: %s", strerror(errno));
 
-#if 0
+	printf("Will mmap in the destination (%s) and source files from "
+	    "offset=%jd to length=%zu\n", dest_filename, offset, length);
+
+	dest_pointer = mmap(NULL, length, PROT_READ, MAP_PRIVATE, dest_fd, offset);
+	ATF_REQUIRE_MSG(src_pointer != MAP_FAILED, "mmap failed: %s",
+	    strerror(errno));
+
+	src_pointer = mmap(NULL, length, PROT_READ, MAP_PRIVATE, src_fd, offset);
+	ATF_REQUIRE_MSG(src_pointer != MAP_FAILED, "mmap failed: %s",
+	    strerror(errno));
+
 	ATF_REQUIRE_EQ_MSG(0, memcmp(src_pointer, dest_pointer, length),
 	    "Contents of source and destination do not match. '%s' != '%s'",
 	    src_pointer, dest_pointer);
-#endif
+
+	(void)munmap(dest_pointer, length);
+	(void)munmap(src_pointer, length);
 }
 
 ATF_TC(fd_positive_file);
@@ -211,7 +247,7 @@ ATF_TC_BODY(fd_positive_file, tc)
 	ATF_REQUIRE_EQ_MSG(0, error, "sendfile failed: %s", strerror(errno));
 
 	atf_utils_wait(server_pid, 0, "", "");
-	//verify_source_and_dest(fd, offset, nbytes);
+	verify_source_and_dest(DESTINATION_FILE, fd, offset, nbytes);
 
 	(void)close(client_sock);
 	(void)close(server_sock);
@@ -267,7 +303,7 @@ ATF_TC_BODY(fd_positive_shm, tc)
 	ATF_REQUIRE_EQ_MSG(0, error, "sendfile failed: %s", strerror(errno));
 
 	atf_utils_wait(server_pid, 0, "", "");
-	//verify_source_and_dest(fd, offset, nbytes);
+	verify_source_and_dest(DESTINATION_FILE, fd, offset, nbytes);
 
 	(void)munmap(shm_pointer, sizeof(DETERMINISTIC_PATTERN));
 	(void)close(client_sock);
