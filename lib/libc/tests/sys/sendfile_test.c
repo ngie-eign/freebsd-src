@@ -32,6 +32,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -43,14 +44,14 @@ __FBSDID("$FreeBSD$");
 #include <atf-c.h>
 
 const char DETERMINISTIC_PATTERN[] =
-    "The past is already gone, the future is not yet here. There's only one moment for you to live.";
+    "The past is already gone, the future is not yet here. There's only one moment for you to live.\n";
 
 #define	SOURCE_FILE		"source"
 #define	DESTINATION_FILE	"dest"
 
 /* XXX: remove these hardcoded values. */
 #define	XXX_TEST_DOMAIN	AF_INET
-#define	XXX_TEST_PORT	36000
+#define	XXX_TEST_PORT_BASE	20000
 
 static void
 resolve_localhost(struct addrinfo **res, int domain, int type, int port)
@@ -126,6 +127,7 @@ setup_server(int domain, int type, int port)
 
 	resolve_localhost(&res, domain, type, port);
 	sock = make_socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+
 	error = getnameinfo(
 	    (const struct sockaddr*)res->ai_addr, res->ai_addrlen,
 	    host, nitems(host) - 1, NULL, 0, NI_NUMERICHOST);
@@ -144,6 +146,32 @@ setup_server(int domain, int type, int port)
 	return (sock);
 }
 
+static void
+server_cat(const char *dest_filename, int server_sock, size_t len)
+{
+	void *buffer;
+	int recv_sock;
+
+	buffer = calloc(len + 1, sizeof(char));
+	if (buffer == NULL)
+		err(1, "malloc failed");
+
+	recv_sock = accept(server_sock, NULL, 0);
+	if (recv_sock == -1)
+		err(1, "accept failed");
+
+	if (recv(recv_sock, buffer, len, 0) == -1)
+		err(1, "recv failed");
+	(void)close(recv_sock);
+	(void)shutdown(server_sock, SHUT_RDWR);
+
+	atf_utils_create_file(dest_filename, "%s", buffer);
+
+	(void)close(server_sock);
+	free(buffer);
+	_exit(0);
+}
+
 static int
 setup_tcp_server(int domain, int port)
 {
@@ -158,12 +186,23 @@ setup_tcp_client(int domain, int port)
 	return (setup_client(domain, SOCK_STREAM, port));
 }
 
+static off_t
+file_size_from_fd(int fd)
+{
+	struct stat st;
+
+	ATF_REQUIRE_EQ_MSG(0, fstat(fd, &st),
+	    "fstat failed: %s", strerror(errno));
+
+	return (st.st_size);
+}
+
 static void
 verify_source_and_dest(const char* dest_filename, int src_fd, off_t offset,
     size_t nbytes)
 {
 	void *dest_pointer, *src_pointer;
-	struct stat dest_st, src_st;
+	off_t dest_file_size, src_file_size;
 	size_t length;
 	int dest_fd;
 
@@ -174,22 +213,20 @@ verify_source_and_dest(const char* dest_filename, int src_fd, off_t offset,
 	dest_fd = open(dest_filename, O_RDONLY);
 	ATF_REQUIRE_MSG(dest_fd != -1, "open failed");
 
-	ATF_REQUIRE_EQ_MSG(0, fstat(dest_fd, &dest_st),
-	    "fstat(dest_fd) failed: %s", strerror(errno));
-
-	ATF_REQUIRE_EQ_MSG(0, fstat(src_fd, &src_st),
-	    "fstat(src_fd) failed: %s", strerror(errno));
+	dest_file_size = file_size_from_fd(dest_fd);
+	src_file_size = file_size_from_fd(src_fd);
 
 	/*
-	 * Per sendfile(2), "send the whole file" (paraphrased), which means
-	 * that we need to grab the file size, as passing in length=0 with
-	 * mmap(2) will result in a failure with EINVAL, as length=0 is invalid.
+	 * Per sendfile(2), "send the whole file" (paraphrased). This means
+	 * that we need to grab the file size, as passing in length = 0 with
+	 * mmap(2) will result in a failure with EINVAL (length = 0 is invalid).
 	 */
-	length = (nbytes == 0) ? (size_t)(src_st.st_size - offset) : nbytes;
+	length = (nbytes == 0) ? (size_t)(src_file_size - offset) : nbytes;
 
-	ATF_REQUIRE_EQ_MSG(dest_st.st_size, length,
-	    "number of bytes written out to %s (%ju) don't match the expected "
-	    "number of bytes (%ju)", dest_filename, dest_st.st_size, length);
+	ATF_REQUIRE_EQ_MSG(dest_file_size, length,
+	    "number of bytes written out to %s (%ju) doesn't match the "
+	    "expected number of bytes (%ju)", dest_filename, dest_file_size,
+	    length);
 
 	ATF_REQUIRE_EQ_MSG(0, lseek(src_fd, offset, SEEK_SET),
 	    "lseek failed: %s", strerror(errno));
@@ -198,7 +235,7 @@ verify_source_and_dest(const char* dest_filename, int src_fd, off_t offset,
 	    "offset=%jd to length=%zu\n", dest_filename, offset, length);
 
 	dest_pointer = mmap(NULL, length, PROT_READ, MAP_PRIVATE, dest_fd, offset);
-	ATF_REQUIRE_MSG(src_pointer != MAP_FAILED, "mmap failed: %s",
+	ATF_REQUIRE_MSG(dest_pointer != MAP_FAILED, "mmap failed: %s",
 	    strerror(errno));
 
 	src_pointer = mmap(NULL, length, PROT_READ, MAP_PRIVATE, src_fd, offset);
@@ -223,22 +260,26 @@ ATF_TC_HEAD(fd_positive_file, tc)
 ATF_TC_BODY(fd_positive_file, tc)
 {
 	off_t offset;
-	size_t nbytes;
-	int client_sock, error, fd, server_sock;
+	size_t nbytes, pattern_size;
+	int client_sock, error, fd, port, server_sock;
 	pid_t server_pid;
+
+	pattern_size = strlen(DETERMINISTIC_PATTERN);
 
 	atf_utils_create_file(SOURCE_FILE, "%s", DETERMINISTIC_PATTERN);
 	fd = open(SOURCE_FILE, O_RDONLY);
 	ATF_REQUIRE_MSG(fd != -1, "open failed: %s", strerror(errno));
 
-	server_sock = setup_tcp_server(XXX_TEST_DOMAIN, XXX_TEST_PORT);
-	client_sock = setup_tcp_client(XXX_TEST_DOMAIN, XXX_TEST_PORT);
+	port = XXX_TEST_PORT_BASE + __LINE__;
+	server_sock = setup_tcp_server(XXX_TEST_DOMAIN, port);
+	client_sock = setup_tcp_client(XXX_TEST_DOMAIN, port);
 
 	server_pid = atf_utils_fork();
 	if (server_pid == 0) {
-		atf_utils_redirect(server_sock, DESTINATION_FILE);
-		_exit(0);
-	}
+		(void)close(client_sock);
+		server_cat(DESTINATION_FILE, server_sock, pattern_size);
+	} else
+		(void)close(server_sock);
 
 	nbytes = 0;
 	offset = 0;
@@ -250,7 +291,6 @@ ATF_TC_BODY(fd_positive_file, tc)
 	verify_source_and_dest(DESTINATION_FILE, fd, offset, nbytes);
 
 	(void)close(client_sock);
-	(void)close(server_sock);
 	(void)close(fd);
 }
 
@@ -265,36 +305,40 @@ ATF_TC_BODY(fd_positive_shm, tc)
 {
 	void *shm_pointer;
 	off_t offset;
-	size_t nbytes;
+	size_t nbytes, pattern_size;
 	pid_t server_pid;
-	int client_sock, error, fd, server_sock;
+	int client_sock, error, fd, port, server_sock;
+
+	pattern_size = strlen(DETERMINISTIC_PATTERN);
+
+	printf("pattern size: %zu\n", pattern_size);
 
 	fd = shm_open(SHM_ANON, O_RDWR|O_CREAT, 0600);
 	ATF_REQUIRE_MSG(fd != -1, "shm_open failed: %s", strerror(errno));
-	ATF_REQUIRE_EQ_MSG(0, ftruncate(fd, sizeof(DETERMINISTIC_PATTERN)),
+	ATF_REQUIRE_EQ_MSG(0, ftruncate(fd, pattern_size),
 	    "ftruncate failed: %s", strerror(errno));
-	shm_pointer = mmap(NULL, sizeof(DETERMINISTIC_PATTERN),
-	    PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	shm_pointer = mmap(NULL, pattern_size, PROT_READ|PROT_WRITE,
+	    MAP_SHARED, fd, 0);
 	ATF_REQUIRE_MSG(shm_pointer != MAP_FAILED,
 	    "mmap failed: %s", strerror(errno));
-	memcpy(shm_pointer, DETERMINISTIC_PATTERN,
-	    sizeof(DETERMINISTIC_PATTERN));
+	memcpy(shm_pointer, DETERMINISTIC_PATTERN, pattern_size);
 	ATF_REQUIRE_EQ_MSG(0, lseek(fd, 0, SEEK_SET),
 	    "lseek failed: %s", strerror(errno));
 	ATF_REQUIRE_EQ_MSG(0,
-	    memcmp(shm_pointer, DETERMINISTIC_PATTERN,
-	        sizeof(DETERMINISTIC_PATTERN)),
+	    memcmp(shm_pointer, DETERMINISTIC_PATTERN, pattern_size),
 	    "memcmp showed data mismatch: '%s' != '%s'",
 	    DETERMINISTIC_PATTERN, shm_pointer);
 
-	server_sock = setup_tcp_server(XXX_TEST_DOMAIN, XXX_TEST_PORT);
-	client_sock = setup_tcp_client(XXX_TEST_DOMAIN, XXX_TEST_PORT);
+	port = XXX_TEST_PORT_BASE + __LINE__;
+	server_sock = setup_tcp_server(XXX_TEST_DOMAIN, port);
+	client_sock = setup_tcp_client(XXX_TEST_DOMAIN, port);
 
 	server_pid = atf_utils_fork();
 	if (server_pid == 0) {
-		atf_utils_redirect(server_sock, DESTINATION_FILE);
-		_exit(0);
-	}
+		(void)close(client_sock);
+		server_cat(DESTINATION_FILE, server_sock, pattern_size);
+	} else
+		(void)close(server_sock);
 
 	nbytes = 0;
 	offset = 0;
@@ -307,7 +351,6 @@ ATF_TC_BODY(fd_positive_shm, tc)
 
 	(void)munmap(shm_pointer, sizeof(DETERMINISTIC_PATTERN));
 	(void)close(client_sock);
-	(void)close(server_sock);
 	(void)close(fd);
 }
 
@@ -320,10 +363,11 @@ ATF_TC_HEAD(fd_negative_bad_fd, tc)
 
 ATF_TC_BODY(fd_negative_bad_fd, tc)
 {
-	int client_sock, error, fd, server_sock;
+	int client_sock, error, fd, port, server_sock;
 
-	server_sock = setup_tcp_server(XXX_TEST_DOMAIN, XXX_TEST_PORT);
-	client_sock = setup_tcp_client(XXX_TEST_DOMAIN, XXX_TEST_PORT);
+	port = XXX_TEST_PORT_BASE + __LINE__;
+	server_sock = setup_tcp_server(XXX_TEST_DOMAIN, port);
+	client_sock = setup_tcp_client(XXX_TEST_DOMAIN, port);
 
 	fd = -1;
 
