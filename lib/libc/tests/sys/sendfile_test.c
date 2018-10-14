@@ -151,6 +151,7 @@ server_cat(const char *dest_filename, int server_sock, size_t len)
 {
 	void *buffer;
 	int recv_sock;
+	ssize_t received_bytes;
 
 	buffer = calloc(len + 1, sizeof(char));
 	if (buffer == NULL)
@@ -160,15 +161,29 @@ server_cat(const char *dest_filename, int server_sock, size_t len)
 	if (recv_sock == -1)
 		err(1, "accept failed");
 
+	/*
+	 * XXX: this assumes the simplest case where all data is received in a
+	 * single recv(2) call.
+	 */
 	if (recv(recv_sock, buffer, len, 0) == -1)
 		err(1, "recv failed");
-	(void)close(recv_sock);
-	(void)shutdown(server_sock, SHUT_RDWR);
 
 	atf_utils_create_file(dest_filename, "%s", buffer);
 
+	received_bytes = recv(recv_sock, buffer, len, 0);
+	switch (received_bytes) {
+	case -1:
+		err(1, "recv failed");
+	case 0:
+		break;
+	default:
+		errx(1, "received unexpected data: %s", buffer);
+	}
+
+	(void)close(recv_sock);
 	(void)close(server_sock);
 	free(buffer);
+
 	_exit(0);
 }
 
@@ -286,11 +301,11 @@ ATF_TC_BODY(fd_positive_file, tc)
 	error = sendfile(fd, client_sock, offset, nbytes, NULL, NULL,
 	    SF_FLAGS(0, 0));
 	ATF_REQUIRE_EQ_MSG(0, error, "sendfile failed: %s", strerror(errno));
+	(void)close(client_sock);
 
 	atf_utils_wait(server_pid, 0, "", "");
 	verify_source_and_dest(DESTINATION_FILE, fd, offset, nbytes);
 
-	(void)close(client_sock);
 	(void)close(fd);
 }
 
@@ -345,12 +360,12 @@ ATF_TC_BODY(fd_positive_shm, tc)
 	error = sendfile(fd, client_sock, offset, nbytes, NULL, NULL,
 	    SF_FLAGS(0, 0));
 	ATF_REQUIRE_EQ_MSG(0, error, "sendfile failed: %s", strerror(errno));
+	(void)close(client_sock);
 
 	atf_utils_wait(server_pid, 0, "", "");
 	verify_source_and_dest(DESTINATION_FILE, fd, offset, nbytes);
 
 	(void)munmap(shm_pointer, sizeof(DETERMINISTIC_PATTERN));
-	(void)close(client_sock);
 	(void)close(fd);
 }
 
