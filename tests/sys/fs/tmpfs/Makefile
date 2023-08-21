@@ -35,7 +35,7 @@ NETBSD_ATF_TESTS_SH+=	vnd_test
 NETBSD_ATF_TESTS_SH+=	vnode_leak_test
 
 ${PACKAGE}FILES+=	h_funcs.subr
-${PACKAGE}FILESDIR=	${TESTSDIR}
+${PACKAGE}FILESDIR=	${TESTSDIR:H}
 
 PROGS+=			h_tools
 BINDIR.h_tools=		${TESTSDIR}
@@ -53,9 +53,7 @@ ATF_TESTS_SH_SED_mount_test=		\
 ATF_TESTS_SH_SED_readdir_test=		-e 's,mknod fifo p,mkfifo fifo,g'
 ATF_TESTS_SH_SED_sizes_test=		-e 's,-o -s,-o size=,g'
 ATF_TESTS_SH_SED_statvfs_test=		-e 's,-o -s,-o size=,g'
-ATF_TESTS_SH_SED_vnd_test=		\
-					-e 's,vndconfig -u /dev/vnd3,mdconfig -d -u $$md_dev,g' \
-					-e 's,/dev/vnd3,/dev/$$md_dev,g'
+ATF_TESTS_SH_SED_vnd_test=		-e 's,vndconfig -u ,mdconfig -d -u ,g'
 ATF_TESTS_SH_SED_vnode_leak_test=	-e 's,-o -s,-o size=,g'
 
 .include <netbsd-tests.test.mk>

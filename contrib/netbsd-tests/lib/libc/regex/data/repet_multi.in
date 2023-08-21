@@ -19,6 +19,8 @@ a{1}?		C	BADRPT
 a*{b}		b	a{b}	a{b}
 a*{b}		C	BADRPT
 # End FreeBSD
+# repetition needs to be a number
+#a*{b}		-	a{b}	a{b}
 a\{1\}\{1\}	bC	BADRPT
 a*\{1\}		bC	BADRPT
 a\{1\}*		bC	BADRPT

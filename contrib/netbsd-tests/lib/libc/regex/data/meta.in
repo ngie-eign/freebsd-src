@@ -7,6 +7,8 @@ a\\\*b		&	a\*b	a\*b
 # Begin FreeBSD
 a\bc		&CP	EESCAPE
 # End FreeBSD
+# legacy escape
+#a\bc		&	abc	abc
 a\		&C	EESCAPE
 a\\bc		&	a\bc	a\bc
 \{		bC	BADRPT

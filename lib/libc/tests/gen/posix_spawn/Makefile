@@ -11,6 +11,9 @@ PROGS=		h_fileactions
 PROGS+=		h_spawn
 PROGS+=		h_spawnattr
 
+SRCS.fileactions_test=	t_fileactions.c fa_spawn_utils.c
+SRCS.spawn_test=	t_fileactions.c fa_spawn_utils.c
+
 SCRIPTS=	h_nonexec
 SCRIPTS+=	h_zero
 

@@ -247,7 +247,7 @@ ATF_TC_BODY(scalbnf_val, tc)
 		    "test %zu: return value %.8g instead of %.8g"
 		    " (error %.8g)",
 		    i, rv, tests[i].result,
-		    fabs((tests[i].result - rv)/tests[i].result));
+		    fabsf((tests[i].result - rv)/tests[i].result));
 	}
 }
 

@@ -33,7 +33,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
+#ifdef	__FreeBSD__
 #include <inttypes.h>
+#endif
 
 /*
  * This tests for a bug in the initial implementation where

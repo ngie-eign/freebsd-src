@@ -1,4 +1,4 @@
-/* $NetBSD: t_spawnattr.c,v 1.1 2012/02/13 21:03:08 martin Exp $ */
+/* $NetBSD: t_spawnattr.c,v 1.6 2022/05/23 21:46:12 andvar Exp $ */
 
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
@@ -29,7 +29,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <sys/cdefs.h>
+__RCSID("$NetBSD: t_spawnattr.c,v 1.6 2022/05/23 21:46:12 andvar Exp $");
 
+#include <sys/param.h>
 #include <atf-c.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,56 +45,47 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-static int get_different_scheduler(void);
-static int get_different_priority(int scheduler);
-
-static const int schedulers[] = {
-	SCHED_OTHER,
-	SCHED_FIFO,
-	SCHED_RR
-};
-
 static int
 get_different_scheduler(void)
 {
-	u_int i;
-	int scheduler;
+	/*
+	 * We don't want to use SCHED_OTHER because it does not have
+	 * different priorities.
+	 */
 
 	/* get current schedule policy */
-	scheduler = sched_getscheduler(0);
-	for (i = 0; i < __arraycount(schedulers); i++) {
-		if (schedulers[i] == scheduler)
-			break;
+	switch (sched_getscheduler(0)) {
+	case SCHED_RR:
+		return SCHED_FIFO;
+	case SCHED_FIFO:
+	case SCHED_OTHER:
+		return SCHED_RR;
+	default:
+		abort();
 	}
-	ATF_REQUIRE_MSG(i < __arraycount(schedulers),
-	    "Unknown current scheduler %d", scheduler);
-
-	/* new scheduler */
-	i++;
-	if (i >= __arraycount(schedulers))
-		i = 0;
-	return schedulers[i];
 }
 
 static int
 get_different_priority(int scheduler)
 {
-	int max, min, new, priority;
+	int min, max, new, priority;
 	struct sched_param param;
 
+	/* Get the priority range for the new scheduler */
 	max = sched_get_priority_max(scheduler);
 	min = sched_get_priority_min(scheduler);
 
 	sched_getparam(0, &param);
 	priority = param.sched_priority;
-
-	/*
-	 * Change numerical value of the priority, to ensure that it
-	 * was set for the spawned child.
-	 */
-	new = priority + 1;
-	if (new > max)
-		new = min;
+	
+	/* new schedule policy */
+	for (new = min; new <= max; new++)
+		if (priority != new)
+			break;
+	
+	ATF_REQUIRE_MSG(priority != new, "could not find different priority");
+	printf("min %d max %d for scheduler %d, returning %d\n",
+	    min, max, scheduler, new);
 	return new;
 }
 
@@ -115,7 +109,7 @@ ATF_TC_BODY(t_spawnattr, tc)
 	char helper[FILENAME_MAX];
 
 	/*
-	 * create a pipe to controll the child
+	 * create a pipe to control the child
 	 */
 	err = pipe(pfd);
 	ATF_REQUIRE_MSG(err == 0, "could not create pipe, errno %d", errno);
@@ -126,7 +120,8 @@ ATF_TC_BODY(t_spawnattr, tc)
 	scheduler = get_different_scheduler();
 	priority = get_different_priority(scheduler);
 	sp.sched_priority = priority;
-
+	printf("using scheduler %d, priority %d\n", scheduler, priority);
+	
 	sigemptyset(&sig);
 	sigaddset(&sig, SIGUSR1);
 
@@ -169,9 +164,43 @@ ATF_TC_BODY(t_spawnattr, tc)
 	posix_spawnattr_destroy(&attr);
 }
 
+ATF_TC(t_spawn_resetids);
+
+ATF_TC_HEAD(t_spawn_resetids, tc)
+{
+	atf_tc_set_md_var(tc, "descr",
+	    "posix_spawn a child and with POSIX_SPAWN_RESETIDS flag");
+}
+
+ATF_TC_BODY(t_spawn_resetids, tc)
+{
+	char buf[FILENAME_MAX];
+	char * const args[] = {
+	     __UNCONST("h_spawn"), __UNCONST("--resetids"), NULL
+	};
+	posix_spawnattr_t attr;
+	int err, status;
+	pid_t pid;
+
+	posix_spawnattr_init(&attr);
+	posix_spawnattr_setflags(&attr, POSIX_SPAWN_RESETIDS);
+
+	snprintf(buf, sizeof buf, "%s/h_spawn",
+	    atf_tc_get_config_var(tc, "srcdir"));
+
+	err = posix_spawn(&pid, buf, NULL, &attr, args, NULL);
+	ATF_REQUIRE(err == 0);
+	ATF_REQUIRE(pid > 0);
+	waitpid(pid, &status, 0);
+	ATF_REQUIRE(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+
+	posix_spawnattr_destroy(&attr);
+}
+
 ATF_TP_ADD_TCS(tp)
 {
 	ATF_TP_ADD_TC(tp, t_spawnattr);
+	ATF_TP_ADD_TC(tp, t_spawn_resetids);
 
 	return atf_no_error();
 }

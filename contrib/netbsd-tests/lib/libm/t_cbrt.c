@@ -286,9 +286,8 @@ ATF_TC_BODY(cbrtl_powl, tc)
 	const long double eps = 2*LDBL_EPSILON;
 	size_t i;
 
-#if defined(__amd64__) && defined(__clang__) && __clang_major__ >= 7 && \
-    __clang_major__ < 10 && __FreeBSD_cc_version < 1300002
-	atf_tc_expect_fail("test fails with clang 7-9 - bug 234040");
+#if LDBL_MANT_DIG > DBL_MANT_DIG
+	atf_tc_expect_fail("powl not yet implemented with full precision");
 #endif
 	for (i = 0; i < __arraycount(x); i++) {
 		long double x_cbrt = cbrtl(x[i]);

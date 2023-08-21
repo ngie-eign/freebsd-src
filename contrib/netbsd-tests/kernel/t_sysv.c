@@ -1,4 +1,4 @@
-/*	$NetBSD: t_sysv.c,v 1.4 2014/03/02 20:13:12 jmmv Exp $	*/
+/*	$NetBSD: t_sysv.c,v 1.6 2022/05/14 14:02:03 christos Exp $	*/
 
 /*-
  * Copyright (c) 1999, 2007 The NetBSD Foundation, Inc.
@@ -119,17 +119,15 @@ write_int(const char *path, const int value)
 static int
 read_int(const char *path)
 {
-	int input;
+	int input, value;
 
 	input = open(path, O_RDONLY);
 	if (input == -1)
 		return -1;
-	else {
-		int value;
-		ATF_REQUIRE_EQ(read(input, &value, sizeof(value)), sizeof(value));
-		close(input);
-		return value;
-	}
+
+	ATF_REQUIRE_EQ(read(input, &value, sizeof(value)), sizeof(value));
+	close(input);
+	return value;
 }
 
 
@@ -162,10 +160,12 @@ key_t get_ftok(int id)
 		rmdir(tmpdir);
 		atf_tc_fail("open() of temp file failed: %d", errno);
 		return (key_t)-1;
-	} else
-		close(fd);
+	}
+
+	close(fd);
 
 	key = ftok(token_key, id);
+	ATF_REQUIRE_MSG(key != (key_t)-1, "ftok() failed");
 
 	ATF_REQUIRE_MSG(unlink(token_key) != -1, "unlink() failed: %d", errno);
 	ATF_REQUIRE_MSG(rmdir(token_dir) != -1, "rmdir() failed: %d", errno);
@@ -259,7 +259,7 @@ ATF_TC_BODY(msg, tc)
 		    0) != -1, "sender: msgsnd 1: %d", errno);
 
 		ATF_REQUIRE_MSG(msgrcv(sender_msqid, &m, MESSAGE_TEXT_LEN,
-				       MTYPE_1_ACK, 0) == MESSAGE_TEXT_LEN,
+		    MTYPE_1_ACK, 0) == MESSAGE_TEXT_LEN,
 		    "sender: msgrcv 1 ack: %d", errno);
 
 		print_msqid_ds(&m_ds, 0600);
@@ -269,11 +269,11 @@ ATF_TC_BODY(msg, tc)
 		 */
 		m.mtype = MTYPE_2;
 		strlcpy(m.mtext, m2_str, sizeof(m.mtext));
-		ATF_REQUIRE_MSG(msgsnd(sender_msqid, &m, MESSAGE_TEXT_LEN, 0) != -1,
+		ATF_REQUIRE_EQ_MSG(msgsnd(sender_msqid, &m, MESSAGE_TEXT_LEN, 0), 0,
 		    "sender: msgsnd 2: %d", errno);
 
 		ATF_REQUIRE_MSG(msgrcv(sender_msqid, &m, MESSAGE_TEXT_LEN,
-				       MTYPE_2_ACK, 0) == MESSAGE_TEXT_LEN,
+		    MTYPE_2_ACK, 0) == MESSAGE_TEXT_LEN,
 		    "sender: msgrcv 2 ack: %d", errno);
 	}
 
@@ -302,9 +302,10 @@ ATF_TC_CLEANUP(msg, tc)
 	 * Remove the message queue if it exists.
 	 */
 	sender_msqid = read_int("sender_msqid");
-	if (sender_msqid != -1)
-		if (msgctl(sender_msqid, IPC_RMID, NULL) == -1)
-			err(1, "msgctl IPC_RMID");
+	if (sender_msqid == -1)
+		return;
+	if (msgctl(sender_msqid, IPC_RMID, NULL) == -1)
+		err(EXIT_FAILURE, "msgctl IPC_RMID");
 }
 
 void
@@ -318,8 +319,8 @@ print_msqid_ds(struct msqid_ds *mp, mode_t mode)
 	    mp->msg_perm.cuid, mp->msg_perm.cgid,
 	    mp->msg_perm.mode & 0777);
 
-	printf("qnum %lu, qbytes %lu, lspid %d, lrpid %d\n",
-	    mp->msg_qnum, (u_long)mp->msg_qbytes, mp->msg_lspid,
+	printf("qnum %lu, qbytes %ju, lspid %d, lrpid %d\n",
+	    mp->msg_qnum, (uintmax_t)mp->msg_qbytes, mp->msg_lspid,
 	    mp->msg_lrpid);
 
 	printf("stime: %s", ctime(&mp->msg_stime));
@@ -346,42 +347,46 @@ receiver(void)
 	int msqid, loop;
 
 	if ((msqid = msgget(msgkey, 0)) == -1)
-		err(1, "receiver: msgget");
+		err(EXIT_FAILURE, "receiver: msgget");
 
 	for (loop = 0; loop < maxloop; loop++) {
 		/*
 		 * Receive the first message, print it, and send an ACK.
 		 */
-		if (msgrcv(msqid, &m, MESSAGE_TEXT_LEN, MTYPE_1, 0) != MESSAGE_TEXT_LEN)
-			err(1, "receiver: msgrcv 1");
+		if (msgrcv(msqid, &m, MESSAGE_TEXT_LEN, MTYPE_1, 0)
+		    != MESSAGE_TEXT_LEN)
+			err(EXIT_FAILURE, "receiver: msgrcv 1");
 
 		printf("%s\n", m.mtext);
 		if (strcmp(m.mtext, m1_str) != 0)
-			errx(1, "receiver: message 1 data isn't correct");
+			errx(EXIT_FAILURE,
+			    "receiver: message 1 data isn't correct");
 
 		m.mtype = MTYPE_1_ACK;
 
 		if (msgsnd(msqid, &m, MESSAGE_TEXT_LEN, 0) == -1)
-			err(1, "receiver: msgsnd ack 1");
+			err(EXIT_FAILURE, "receiver: msgsnd ack 1");
 
 		/*
 		 * Receive the second message, print it, and send an ACK.
 		 */
 
-		if (msgrcv(msqid, &m, MESSAGE_TEXT_LEN, MTYPE_2, 0) != MESSAGE_TEXT_LEN)
-			err(1, "receiver: msgrcv 2");
+		if (msgrcv(msqid, &m, MESSAGE_TEXT_LEN, MTYPE_2, 0)
+		    != MESSAGE_TEXT_LEN)
+			err(EXIT_FAILURE, "receiver: msgrcv 2");
 
 		printf("%s\n", m.mtext);
 		if (strcmp(m.mtext, m2_str) != 0)
-			errx(1, "receiver: message 2 data isn't correct");
+			errx(EXIT_FAILURE,
+			    "receiver: message 2 data isn't correct");
 
 		m.mtype = MTYPE_2_ACK;
 
 		if (msgsnd(msqid, &m, MESSAGE_TEXT_LEN, 0) == -1)
-			err(1, "receiver: msgsnd ack 2");
+			err(EXIT_FAILURE, "receiver: msgsnd ack 2");
 	}
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 /*
@@ -519,9 +524,10 @@ ATF_TC_CLEANUP(sem, tc)
 	 * Remove the semaphore if it exists
 	 */
 	sender_semid = read_int("sender_semid");
-	if (sender_semid != -1)
-		if (semctl(sender_semid, 0, IPC_RMID) == -1)
-			err(1, "semctl IPC_RMID");
+	if (sender_semid == -1)
+		return;
+	if (semctl(sender_semid, 0, IPC_RMID) == -1)
+		err(EXIT_FAILURE, "semctl IPC_RMID");
 }
 
 void
@@ -561,7 +567,7 @@ waiter(void)
 	int semid;
 
 	if ((semid = semget(semkey, 1, 0)) == -1)
-		err(1, "waiter: semget");
+		err(EXIT_FAILURE, "waiter: semget");
 
 	/*
 	 * Attempt to acquire the semaphore.
@@ -571,7 +577,7 @@ waiter(void)
 	s.sem_flg = SEM_UNDO;
 
 	if (semop(semid, &s, 1) == -1)
-		err(1, "waiter: semop -1");
+		err(EXIT_FAILURE, "waiter: semop -1");
 
 	printf("WOO!  GOT THE SEMAPHORE!\n");
 	usleep(10000);
@@ -584,9 +590,9 @@ waiter(void)
 	s.sem_flg = SEM_UNDO;
 
 	if (semop(semid, &s, 1) == -1)
-		err(1, "waiter: semop +1");
+		err(EXIT_FAILURE, "waiter: semop +1");
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 /*
@@ -710,6 +716,11 @@ ATF_TC_CLEANUP(shm, tc)
 {
 
 	shmid_cleanup("sender_shmid");
+	sender_shmid = read_int("sender_shmid");
+	if (sender_shmid == -1)
+		return;
+	if (shmctl(sender_shmid, IPC_RMID, NULL) == -1)
+		err(EXIT_FAILURE, "shmctl IPC_RMID");
 }
 
 void
@@ -723,8 +734,8 @@ print_shmid_ds(struct shmid_ds *sp, mode_t mode)
 	    sp->shm_perm.cuid, sp->shm_perm.cgid,
 	    sp->shm_perm.mode & 0777);
 
-	printf("segsz %lu, lpid %d, cpid %d, nattch %u\n",
-	    (u_long)sp->shm_segsz, sp->shm_lpid, sp->shm_cpid,
+	printf("segsz %ju, lpid %d, cpid %d, nattch %u\n",
+	    (uintmax_t)sp->shm_segsz, sp->shm_lpid, sp->shm_cpid,
 	    sp->shm_nattch);
 
 	printf("atime: %s", ctime(&sp->shm_atime));
@@ -741,7 +752,8 @@ print_shmid_ds(struct shmid_ds *sp, mode_t mode)
 	ATF_REQUIRE_MSG(sp->shm_perm.gid == gid && sp->shm_perm.cgid == gid,
 	    "gid mismatch");
 
-	ATF_REQUIRE_MSG((sp->shm_perm.mode & 0777) == mode, "mode mismatch");
+	ATF_REQUIRE_MSG((sp->shm_perm.mode & 0777) == mode,
+	    "mode mismatch %o != %o", sp->shm_perm.mode & 0777, mode);
 }
 
 void
@@ -752,18 +764,18 @@ sharer(void)
 
 	shmid = shmget(shmkey, pgsize, 0);
 	if (shmid == -1)
-		err(1, "receiver: shmget");
+		err(EXIT_FAILURE, "receiver: shmget");
 
 	shm_buf = shmat(shmid, NULL, 0);
 	if (shm_buf == (void *) -1)
-		err(1, "receiver: shmat");
+		err(EXIT_FAILURE, "receiver: shmat");
 
 	printf("%s\n", (const char *)shm_buf);
 
 	if (strcmp((const char *)shm_buf, m2_str) != 0)
-		errx(1, "receiver: data isn't correct");
+		errx(EXIT_FAILURE, "receiver: data isn't correct");
 
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 #ifdef SHM_REMAP
@@ -772,7 +784,7 @@ ATF_TC_HEAD(shm_remap, tc)
 {
 
 	atf_tc_set_md_var(tc, "descr", "Checks SHM_REMAP");
-}
+
 
 ATF_TC_BODY(shm_remap, tc)
 {
@@ -816,4 +828,3 @@ ATF_TP_ADD_TCS(tp)
 
 	return atf_no_error();
 }
-

@@ -12,13 +12,15 @@
 \}		&	}	}
 {abc		b	{abc	{abc
 {abc		C	BADRPT
-# End FreeBSD
-{1		C	BADRPT
-{1}		C	BADRPT
-# Begin FreeBSD
 a{b		b	a{b	a{b
 a{b		C	BADRPT
 # End FreeBSD
+# unclosed and with missing values are now errors
+#{		&	{	{
+#{abc		&	{abc	{abc
+{1		C	BADRPT
+{1}		C	BADRPT
+#a{b		&	a{b	a{b
 a{1}b		-	ab	ab
 a\{1\}b		b	ab	ab
 a{1,}b		-	ab	ab
@@ -34,12 +36,12 @@ a\{1a\}		bC	BADBR
 # Begin FreeBSD
 a{,2}		b	a{,2}	a{,2}
 a{,2}		C	BADBR
-# End FreeBSD
-a\{,2\}		bC	BADBR
-# Begin FreeBSD
 a{,}		b	a{,}	a{,}
 a{,}		C	BADBR
 # End FreeBSD
+#a{,2}		-	a{,2}	a{,2}
+a\{,2\}		bC	BADBR
+#a{,}		-	a{,}	a{,}
 a\{,\}		bC	BADBR
 a{1,x}		C	BADBR
 a\{1,x\}	bC	BADBR
