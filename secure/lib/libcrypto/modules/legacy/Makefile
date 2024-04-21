@@ -31,6 +31,8 @@ SRCS+=	record/tls_pad.c
 
 .include <bsd.lib.mk>
 
+PICFLAG+=	-DOPENSSL_PIC
+
 SOLINKOPTS+=	-Wl,-Bsymbolic
 
 .PATH:	${LCRYPTO_SRC}/providers/implementations/ciphers \

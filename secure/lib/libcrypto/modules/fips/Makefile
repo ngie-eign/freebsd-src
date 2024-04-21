@@ -301,6 +301,8 @@ LIBADD+=	pthread
 
 .include <bsd.lib.mk>
 
+PICFLAG+=	-DOPENSSL_PIC
+
 SOLINKOPTS+=	-Wl,-Bsymbolic
 
 .if defined(ASM_${MACHINE_CPUARCH})
