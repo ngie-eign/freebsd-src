@@ -40,6 +40,8 @@ LIBADD=	crypto
 CFLAGS+=	-I${LCRYPTO_SRC}/ssl
 CFLAGS+=	-I${.OBJDIR:H}/libcrypto
 
+LDFLAGS+=	-Wl,-Bsymbolic
+
 .include <bsd.lib.mk>
 
 PICFLAG+=	-DOPENSSL_PIC

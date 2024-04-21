@@ -31,6 +31,8 @@ SRCS+=	record/tls_pad.c
 
 .include <bsd.lib.mk>
 
+SOLINKOPTS+=	-Wl,-Bsymbolic
+
 .PATH:	${LCRYPTO_SRC}/providers/implementations/ciphers \
 	${LCRYPTO_SRC}/providers/implementations/digests \
 	${LCRYPTO_SRC}/providers/implementations/kdfs \

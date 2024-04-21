@@ -299,6 +299,8 @@ SRCS+=	record/tls_pad.c s3_cbc.c
 
 .include <bsd.lib.mk>
 
+SOLINKOPTS+=	-Wl,-Bsymbolic
+
 .if defined(ASM_${MACHINE_CPUARCH})
 .PATH:	${SRCTOP}/sys/crypto/openssl/${MACHINE_CPUARCH}
 .if defined(ASM_amd64)
