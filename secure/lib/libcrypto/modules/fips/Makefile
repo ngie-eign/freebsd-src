@@ -297,6 +297,8 @@ SRCS+=	rsa_sig.c
 # ssl
 SRCS+=	record/tls_pad.c s3_cbc.c
 
+LIBADD+=	pthread
+
 .include <bsd.lib.mk>
 
 SOLINKOPTS+=	-Wl,-Bsymbolic
