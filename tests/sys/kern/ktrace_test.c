@@ -119,7 +119,7 @@ syscallabi(u_int sv_flags)
 static int
 trace_child(int cpid, int facility, int status)
 {
-	int error, fd;
+	int error, exit_status, fd;
 
 	ATF_REQUIRE((fd = open("ktrace.out",
 	    O_RDONLY | O_CREAT | O_TRUNC, 0600)) != -1);
@@ -130,7 +130,10 @@ trace_child(int cpid, int facility, int status)
 	/* Wait for child to raise violation and exit. */
 	ATF_REQUIRE(waitpid(cpid, &error, 0) != -1);
 	ATF_REQUIRE(WIFEXITED(error));
-	ATF_REQUIRE_EQ(WEXITSTATUS(error), status);
+	exit_status = WEXITSTATUS(error);
+	ATF_REQUIRE_EQ_MSG(exit_status, status,
+	    "Child exited with %d (expected %d). Check stderr for more details",
+	    exit_status, status);
 	return (fd);
 }
 
@@ -178,7 +181,7 @@ ATF_TC_BODY(ktrace__cap_not_capable, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Limit fd rights to CAP_READ. */
 		cap_rights_init(&rights, CAP_READ);
@@ -215,7 +218,7 @@ ATF_TC_BODY(ktrace__cap_increase_rights, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Limit fd rights to CAP_READ. */
 		cap_rights_init(&rights, CAP_READ);
@@ -253,7 +256,7 @@ ATF_TC_BODY(ktrace__cap_syscall, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -298,7 +301,7 @@ ATF_TC_BODY(ktrace__cap_signal, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -339,7 +342,7 @@ ATF_TC_BODY(ktrace__cap_proto, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -385,7 +388,7 @@ ATF_TC_BODY(ktrace__cap_sockaddr, tc)
 	ATF_REQUIRE(bind(sfd, (const struct sockaddr *)&addr,
 	    sizeof(addr)) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -397,7 +400,7 @@ ATF_TC_BODY(ktrace__cap_sockaddr, tc)
 		 */
 		CHILD_REQUIRE(sendto(sfd, NULL, 0, 0,
 		    (const struct sockaddr *)&addr, sizeof(addr)) != -1);
-		exit(0);
+		_exit(0);
 	}
 
 	cap_trace_child(pid, &violation, 1);
@@ -428,7 +431,7 @@ ATF_TC_BODY(ktrace__cap_namei, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -477,7 +480,7 @@ ATF_TC_BODY(ktrace__cap_cpuset, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -512,7 +515,7 @@ ATF_TC_BODY(ktrace__cap_shm_open, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
@@ -554,7 +557,7 @@ ATF_TC_BODY(ktrace__setuid_exec, tc)
 	ATF_REQUIRE(sigaddset(&set, SIGUSR1) != -1);
 	ATF_REQUIRE(sigprocmask(SIG_BLOCK, &set, NULL) != -1);
 
-	ATF_REQUIRE((pid = fork()) != -1);
+	pid = atf_utils_fork();
 	if (pid == 0) {
 		/* Wait until ktrace has started. */
 		CHILD_REQUIRE(sigwait(&set, &error) != -1);
