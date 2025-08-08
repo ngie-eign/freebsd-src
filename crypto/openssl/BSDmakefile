@@ -96,6 +96,17 @@ all:
 	     ${SETENVI} ${WRK_ENV} ${MAKE} buildasm)
 
 	@cd ${.CURDIR} && ${MAKE} __sync_manpages
+	@cd ${.CURDIR} && ${MAKE} __regenerate-manpage-makefiles
+
+__regenerate-manpage-makefiles: .PHONY
+	@echo "==> Regenerating manpage Makefiles"
+.for man_sect in 3 5 7
+	@echo "==> Regenerating manpage Makefiles (section ${man_sect})"
+	@find ${SRCTOP}/secure/lib/libcrypto/man/man${man_sect}/ \
+	    -name "*.${man_sect}" -type f \
+	    -exec ${LCRYPTO_SRC}/freebsd/generate_libcrypto_manpage_makefiles.py {} \; | \
+	    sort > ${SRCTOP}/secure/lib/libcrypto/man/man${man_sect}/Makefile
+.endfor
 
 __sync_manpages: .PHONY
 	@echo "==> Syncing manpages (section 1)"

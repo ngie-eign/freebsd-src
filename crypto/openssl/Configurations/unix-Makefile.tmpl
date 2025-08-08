@@ -1575,8 +1575,11 @@ EOF
           my $pod = $gen0;
           return <<"EOF";
 $args{src}: $pod
-	pod2man --name=$name --section=$section\$(MANSUFFIX) --center=OpenSSL \\
-		--date=\$(RELEASE_DATE) --release=\$(VERSION) \\
+	# pod2mdoc produces structured output that is easier to parse by other
+	# scripts and we have sanity checks which require mdoc to function
+	# (checkmanlinks).
+	pod2mdoc -n $name -s $section\$(MANSUFFIX) \\
+	         -d \$(RELEASE_DATE) \\
 		$pod >\$\@
 EOF
       } elsif (platform->isdef($args{src})) {

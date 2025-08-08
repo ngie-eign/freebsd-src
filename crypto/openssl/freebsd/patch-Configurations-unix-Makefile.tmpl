@@ -1,0 +1,17 @@
+--- Configurations/unix-Makefile.tmpl.orig	2025-10-11 03:01:24 UTC
++++ Configurations/unix-Makefile.tmpl
+@@ -1575,8 +1575,12 @@ $args{src}: $pod
+           my $pod = $gen0;
+           return <<"EOF";
+ $args{src}: $pod
+-	pod2man --name=$name --section=$section\$(MANSUFFIX) --center=OpenSSL \\
+-		--release=\$(VERSION) $pod >\$\@
++	# pod2mdoc produces structured output that is easier to parse by other
++	# scripts and we have sanity checks which require mdoc to function
++	# (checkmanlinks).
++	pod2mdoc -n $name -s $section\$(MANSUFFIX) \\
++	         -d \$(RELEASE_DATE) \\
++		$pod >\$\@
+ EOF
+       } elsif (platform->isdef($args{src})) {
+           #
