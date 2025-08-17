@@ -10,65 +10,134 @@ PCFILES=	libssl.pc openssl.pc
 
 .include "../libcrypto/Makefile.inc"
 
-SRCS=	pqueue.c \
-	statem_srvr.c statem_clnt.c s3_lib.c s3_enc.c \
-	statem_lib.c extensions.c extensions_srvr.c \
-	extensions_clnt.c extensions_cust.c s3_msg.c \
-	methods.c t1_lib.c t1_enc.c tls13_enc.c \
-	d1_lib.c d1_msg.c \
-	statem_dtls.c d1_srtp.c \
-	ssl_lib.c ssl_cert.c ssl_sess.c \
-	ssl_ciph.c ssl_stat.c ssl_rsa.c \
-	ssl_asn1.c ssl_txt.c ssl_init.c ssl_conf.c ssl_mcnf.c \
-	bio_ssl.c ssl_err_legacy.c tls_srp.c t1_trce.c ssl_utst.c \
-	statem.c \
-	ssl_cert_comp.c \
-	tls_depr.c
+# crypto
+SRCS+= ctype.c
+SRCS+= getenv.c
+SRCS+= packet.c
+SRCS+= quic_vlint.c
+SRCS+= time.c
 
-SRCS+=	packet.c quic_vlint.c time.c
+# crypto/hashtable
+SRCS+= hashfunc.c
 
-SRCS+=	ssl_rsa_legacy.c
+# crypto/siphash
+SRCS+= siphash.c
 
-SRCS+=	priority_queue.c
-SRCS+=	hashfunc.c
-SRCS+=	siphash.c
+# crypto/thread
+SRCS+= arch.c
 
-# quic
-SRCS+=	quic_method.c quic_impl.c quic_wire.c quic_ackm.c quic_statm.c
-SRCS+=	cc_newreno.c quic_demux.c quic_record_rx.c
-SRCS+=	quic_record_tx.c quic_record_util.c quic_record_shared.c quic_wire_pkt.c
-SRCS+=	quic_rx_depack.c
-SRCS+=	quic_fc.c uint_set.c
-SRCS+=	quic_cfq.c quic_txpim.c quic_fifd.c quic_txp.c
-SRCS+=	quic_stream_map.c
-SRCS+=	quic_sf_list.c quic_rstream.c quic_sstream.c
-SRCS+=	quic_reactor.c
-SRCS+=	quic_reactor_wait_ctx.c
-SRCS+=	quic_channel.c quic_port.c quic_engine.c
-SRCS+=	quic_tserver.c
-SRCS+=	quic_thread_assist.c
-SRCS+=	quic_trace.c
-SRCS+=	quic_srtm.c quic_srt_gen.c
-SRCS+=	quic_lcidm.c quic_rcidm.c
-SRCS+=	quic_tls.c quic_tls_api.c
-SRCS+=	quic_types.c
-SRCS+=	qlog_event_helpers.c
-SRCS+=	json_enc.c qlog.c
-SRCS+=	getenv.c ctype.c
-SRCS+=	quic_obj.c
+# crypto/thread/arch
+SRCS+= thread_none.c
+SRCS+= thread_posix.c
+SRCS+= thread_win.c
 
-# record
-SRCS+=	rec_layer_d1.c rec_layer_s3.c
+# ssl
+SRCS+= bio_ssl.c
+SRCS+= d1_lib.c
+SRCS+= d1_msg.c
+SRCS+= d1_srtp.c
+SRCS+= methods.c
+SRCS+= pqueue.c
+SRCS+= priority_queue.c
+SRCS+= s3_enc.c
+SRCS+= s3_lib.c
+SRCS+= s3_msg.c
+SRCS+= ssl_asn1.c
+SRCS+= ssl_cert.c
+SRCS+= ssl_cert_comp.c
+SRCS+= ssl_ciph.c
+SRCS+= ssl_conf.c
+SRCS+= ssl_err_legacy.c
+SRCS+= ssl_init.c
+SRCS+= ssl_lib.c
+SRCS+= ssl_mcnf.c
+SRCS+= ssl_rsa.c
+SRCS+= ssl_rsa_legacy.c
+SRCS+= ssl_sess.c
+SRCS+= ssl_stat.c
+SRCS+= ssl_txt.c
+SRCS+= ssl_utst.c
+SRCS+= t1_enc.c
+SRCS+= t1_lib.c
+SRCS+= t1_trce.c
+SRCS+= tls13_enc.c
+SRCS+= tls_depr.c
+SRCS+= tls_srp.c
 
-# record/methods
-SRCS+=	tls_common.c ssl3_meth.c tls1_meth.c tls13_meth.c tlsany_meth.c
-SRCS+=	dtls_meth.c tls_multib.c
-SRSC+=	ssl3_cbc.c
-SRSC+=	tls_pad.c
+# ssl/quic
+SRCS+= cc_newreno.c
+SRCS+= json_enc.c
+SRCS+= qlog.c
+SRCS+= qlog_event_helpers.c
+SRCS+= quic_ackm.c
+SRCS+= quic_cfq.c
+SRCS+= quic_channel.c
+SRCS+= quic_demux.c
+SRCS+= quic_engine.c
+SRCS+= quic_fc.c
+SRCS+= quic_fifd.c
+SRCS+= quic_impl.c
+SRCS+= quic_lcidm.c
+SRCS+= quic_method.c
+SRCS+= quic_obj.c
+SRCS+= quic_port.c
+SRCS+= quic_rcidm.c
+SRCS+= quic_reactor.c
+SRCS+= quic_reactor_wait_ctx.c
+SRCS+= quic_record_rx.c
+SRCS+= quic_record_shared.c
+SRCS+= quic_record_tx.c
+SRCS+= quic_record_util.c
+SRCS+= quic_rstream.c
+SRCS+= quic_rx_depack.c
+SRCS+= quic_sf_list.c
+SRCS+= quic_srt_gen.c
+SRCS+= quic_srtm.c
+SRCS+= quic_sstream.c
+SRCS+= quic_statm.c
+SRCS+= quic_stream_map.c
+SRCS+= quic_thread_assist.c
+SRCS+= quic_tls.c
+SRCS+= quic_tls_api.c
+SRCS+= quic_trace.c
+SRCS+= quic_tserver.c
+SRCS+= quic_txp.c
+SRCS+= quic_txpim.c
+SRCS+= quic_types.c
+SRCS+= quic_wire.c
+SRCS+= quic_wire_pkt.c
+SRCS+= uint_set.c
 
-# rio
-SRCS+=	poll_immediate.c
-SRCS+=	rio_notifier.c poll_builder.c
+# ssl/record
+SRCS+= rec_layer_d1.c
+SRCS+= rec_layer_s3.c
+
+# ssl/record/methods
+SRCS+= dtls_meth.c
+SRCS+= ssl3_cbc.c
+SRCS+= ssl3_meth.c
+SRCS+= tls13_meth.c
+SRCS+= tls1_meth.c
+SRCS+= tls_common.c
+SRCS+= tls_multib.c
+SRCS+= tls_pad.c
+SRCS+= tlsany_meth.c
+
+# ssl/rio
+SRCS+= poll_builder.c
+SRCS+= poll_immediate.c
+SRCS+= rio_notifier.c
+
+# ssl/statem
+SRCS+= extensions.c
+SRCS+= extensions_clnt.c
+SRCS+= extensions_cust.c
+SRCS+= extensions_srvr.c
+SRCS+= statem.c
+SRCS+= statem_clnt.c
+SRCS+= statem_dtls.c
+SRCS+= statem_lib.c
+SRCS+= statem_srvr.c
 
 .if ${MK_OPENSSL_KTLS} == "no" || defined(BOOTSTRAPPING)
 CFLAGS+=-DOPENSSL_NO_KTLS
@@ -76,7 +145,7 @@ CFLAGS+=-DOPENSSL_NO_KTLS
 SRCS+=	ktls_meth.c
 .endif
 
-LIBADD=	pthread crypto
+LIBADD=		pthread crypto
 
 CFLAGS+=	-I${LCRYPTO_SRC}/ssl
 CFLAGS+=	-I${.OBJDIR:H}/libcrypto
@@ -88,9 +157,11 @@ PICFLAG+=	-DOPENSSL_PIC
 .PATH:	${LCRYPTO_SRC}/crypto \
 	${LCRYPTO_SRC}/crypto/hashtable \
 	${LCRYPTO_SRC}/crypto/siphash \
+	${LCRYPTO_SRC}/crypto/thread \
+	${LCRYPTO_SRC}/crypto/thread/arch \
 	${LCRYPTO_SRC}/ssl \
 	${LCRYPTO_SRC}/ssl/quic \
 	${LCRYPTO_SRC}/ssl/record \
 	${LCRYPTO_SRC}/ssl/record/methods \
 	${LCRYPTO_SRC}/ssl/rio \
-	${LCRYPTO_SRC}/ssl/statem
+	${LCRYPTO_SRC}/ssl/statem \
