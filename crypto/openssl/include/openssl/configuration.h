@@ -171,36 +171,6 @@ extern "C" {
 /*
  * The following are cipher-specific, but are part of the public API.
  */
-# if !defined(OPENSSL_SYS_UEFI)
-#  undef BN_LLONG
-/* Only one for the following should be defined */
-#  define SIXTY_FOUR_BIT_LONG
-#  undef SIXTY_FOUR_BIT
-#  undef THIRTY_TWO_BIT
-# endif
-
-# define RC4_INT unsigned int
-
-# if defined(OPENSSL_NO_COMP) || (defined(OPENSSL_NO_BROTLI) && defined(OPENSSL_NO_ZSTD) && defined(OPENSSL_NO_ZLIB))
-#  define OPENSSL_NO_COMP_ALG
-# else
-#  undef  OPENSSL_NO_COMP_ALG
-# endif
-
-# ifdef  __cplusplus
-}
-# endif
-
-#endif                          /* OPENSSL_CONFIGURATION_H */
-
-/**
- * OpenSSL's Configure script generates these values automatically for the host
- * architecture, but FreeBSD provides values which are universal for all
- * supported target architectures.
- */
-
-#ifndef	__FREEBSD_CONFIGURATION_H__
-#define	__FREEBSD_CONFIGURATION_H__
 
 # undef OPENSSL_NO_EC_NISTP_64_GCC_128
 # if __SIZEOF_LONG__ == 4 || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
@@ -209,10 +179,6 @@ extern "C" {
 #  endif
 # endif
 
-# undef BN_LLONG
-# undef	SIXTY_FOUR_BIT_LONG
-# undef SIXTY_FOUR_BIT
-# undef	THIRTY_TWO_BIT
 # if !defined(OPENSSL_SYS_UEFI)
 #  if __SIZEOF_LONG__ == 8
 #   undef BN_LLONG
@@ -229,4 +195,16 @@ extern "C" {
 #  endif
 # endif
 
-#endif  /* __FREEBSD_CONFIGURATION_H__ */
+# define RC4_INT unsigned int
+
+# if defined(OPENSSL_NO_COMP) || (defined(OPENSSL_NO_BROTLI) && defined(OPENSSL_NO_ZSTD) && defined(OPENSSL_NO_ZLIB))
+#  define OPENSSL_NO_COMP_ALG
+# else
+#  undef  OPENSSL_NO_COMP_ALG
+# endif
+
+# ifdef  __cplusplus
+}
+# endif
+
+#endif                          /* OPENSSL_CONFIGURATION_H */

@@ -4,6 +4,8 @@
 # Recommended use:
 #
 #   % make clean
+#   % make patch
+#   % make configure
 #   % make all
 
 NO_OBJ=
@@ -17,15 +19,27 @@ GMAKE?=		gmake
 LD?=		ld
 MV?=		/bin/mv
 PERL?=		perl
+RM?=		/bin/rm
 SETENVI=	/usr/bin/env -i
 
-BN_CONF_H=		include/crypto/bn_conf.h
-BN_CONF_H_ORIG=		${BN_CONF_H}.orig
-CONFIGURATION_H=	include/openssl/configuration.h
-CONFIGURATION_H_ORIG=	${CONFIGURATION_H}.orig
+LOCALBASE=	/usr/local
+SETENV=		env -i PATH=${LOCALBASE}/bin:/bin:/usr/bin
 
-.PHONY: configure patch all
-.ORDER: configure patch all
+PATCH=		/usr/bin/patch
+PATCH_STRIP=	-p0
+PATCH_ARGS=	--forward --quiet -E ${PATCH_STRIP}
+PATCH_ARGS+=	-V simple
+PATCH_ARGS+=	--suffix .orig
+
+FILES_TO_PATCH=	\
+	Configurations/unix-Makefile.tmpl \
+	include/crypto/bn_conf.h.in \
+	include/openssl/configuration.h.in \
+
+PATCH_FILES=	${FILES_TO_PATCH:S/^/patch-/:S/\//-/g:S/^/freebsd\//g}
+
+.PHONY: patch configure all
+.ORDER: patch configure all
 
 LOCALBASE=	/usr/local
 WRK_ENV=	CC=${CC} \
@@ -50,14 +64,16 @@ configure:
 	    --prefix=/usr)
 	@echo "Building configdata.pm for later use."
 	@(cd ${.CURDIR} && \
-	    ${SETENVI} ${WRK_ENV} ${GMAKE} -j ${.MAKE.JOBS} configdata.pm)
+	     ${SETENVI} ${WRK_ENV} ${GMAKE} -j ${.MAKE.JOBS} ${FILES_TO_PATCH:S/.in$//})
+	@(cd ${.CURDIR} && \
+	     ${SETENVI} ${WRK_ENV} ${GMAKE} -j ${.MAKE.JOBS} configdata.pm)
 
 	@echo "Populating Makefile.version with release information"
 	@(cd ${LCRYPTO_SRC} && ${SETENVI} ${WRK_ENV} ${PERL} \
 	     ${LCRYPTO_SRC}/freebsd/dump_version_from_configdata.pl > \
 	     ${SRCTOP}/secure/lib/libcrypto/Makefile.version)
 
-all: patch
+all:
 	@echo "==> Building generated files (headers, manpages, etc)"
 	@(cd ${.CURDIR} && \
 	     ${SETENVI} ${WRK_ENV} ${GMAKE} -j ${.MAKE.JOBS} build_all_generated)
@@ -79,6 +95,9 @@ all: patch
 	     ${SETENVI} ${WRK_ENV} ${MAKE} cleanasm && \
 	     ${SETENVI} ${WRK_ENV} ${MAKE} buildasm)
 
+	@cd ${.CURDIR} && ${MAKE} __sync_manpages
+
+__sync_manpages: .PHONY
 	@echo "==> Syncing manpages (section 1)"
 	@rsync -a --delete \
 	    --exclude 'Makefile*' --exclude '*.1' \
@@ -91,28 +110,30 @@ all: patch
 	    ${LCRYPTO_DOC}/man/man1/ \
 	    ${SRCTOP}/secure/usr.bin/openssl/man
 
-
-# This doesn't use standard patching since the generated files can vary
-# depending on the host architecture.
-patch: configure
+patch:
 	# Spam arch-specific overrides to config files.
-	@echo "==> Patching headers"
-	@(cd ${.CURDIR} && ${SETENVI} ${WRK_ENV} ${GMAKE} ${BN_CONF_H} && \
-	 ${MV} ${BN_CONF_H} ${BN_CONF_H_ORIG} && \
-	 ${CAT} ${BN_CONF_H}.orig \
-	     ${LCRYPTO_SRC}/freebsd/${BN_CONF_H} >> \
-	     ${BN_CONF_H})
+.for file in ${PATCH_FILES}
+	@echo "==> Applying patch ${file}"
+	@${SETENVI} ${PATCH} ${PATCH_ARGS} < ${file}
+.endfor
 
-	@(cd ${.CURDIR} && \
-	  ${MV} ${CONFIGURATION_H} ${CONFIGURATION_H_ORIG} && \
-	  ${CAT} ${CONFIGURATION_H_ORIG} \
-	     ${LCRYPTO_SRC}/freebsd/${CONFIGURATION_H} >> \
-	     ${CONFIGURATION_H})
-
+makepatch: .PHONY
+.for file in ${FILES_TO_PATCH}
+	ORIG=${file}.orig; \
+	NEW=${file}; \
+	OUT=${.CURDIR}/freebsd/patch-${file:S/\//-/g}; \
+	TZ=UTC diff -audp $${ORIG} $${NEW} | \
+	sed \
+		-e '/^---/s|\.[0-9]* +0000$$| UTC|' \
+		-e '/^+++/s|\([[:blank:]][-0-9:.+]*\)*$$||' \
+		> $${OUT} || true
+.endfor
 
 clean: .PHONY
-	@(cd ${.CURDIR} && rm -f ${BN_CONF_H_ORIG} ${CONFIGURATION_H_ORIG})
-
+.for file in ${FILES_TO_PATCH}
+	@echo "==> Restoring ${file}"
+	-@${MV} ${file}.orig ${file}
+.endfor
 	@(cd ${SRCTOP}/secure/lib/libcrypto && \
 	    ${SETENVI} ${WRK_ENV} ${MAKE} cleanasm)
 

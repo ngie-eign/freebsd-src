@@ -1,0 +1,23 @@
+--- include/crypto/bn_conf.h.in.orig	2025-09-18 19:49:34 UTC
++++ include/crypto/bn_conf.h.in
+@@ -20,9 +20,16 @@
+ 
+ /* Should we define BN_DIV2W here? */
+ 
+-/* Only one for the following should be defined */
+-{- $config{b64l} ? "#define" : "#undef" -} SIXTY_FOUR_BIT_LONG
+-{- $config{b64}  ? "#define" : "#undef" -} SIXTY_FOUR_BIT
+-{- $config{b32}  ? "#define" : "#undef" -} THIRTY_TWO_BIT
++# if __SIZEOF_LONG__ == 8
++#  define SIXTY_FOUR_BIT_LONG
++#  undef SIXTY_FOUR_BIT
++#  undef THIRTY_TWO_BIT
++# elif __SIZEOF_LONG__ == 4
++#  undef SIXTY_FOUR_BIT_LONG
++#  undef SIXTY_FOUR_BIT
++#  define THIRTY_TWO_BIT
++# else
++#  error Unsupported size of long
++# endif
+ 
+ #endif
