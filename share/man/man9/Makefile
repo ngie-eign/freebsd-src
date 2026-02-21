@@ -99,6 +99,7 @@ MAN=	accept_filter.9 \
 	devclass_get_maxunit.9 \
 	devclass_get_name.9 \
 	devclass_get_softc.9 \
+	devclass_get_sysctl.9 \
 	dev_clone.9 \
 	devfs_set_cdevpriv.9 \
 	device.9 \
@@ -1036,6 +1037,8 @@ MLINKS+=DECLARE_MODULE.9 DECLARE_MODULE_TIED.9
 MLINKS+=dev_clone.9 drain_dev_clone_events.9
 MLINKS+=dev_refthread.9 devvn_refthread.9 \
 	dev_refthread.9 dev_relthread.9
+MLINKS+=devclass_get_sysctl.9 devclass_get_sysctl_ctx.9 \
+	devclass_get_sysctl.9 devclass_get_sysctl_tree.9
 MLINKS+=devfs_set_cdevpriv.9 devfs_clear_cdevpriv.9 \
 	devfs_set_cdevpriv.9 devfs_get_cdevpriv.9 \
 	devfs_set_cdevpriv.9 devfs_foreach_cdevpriv.9

@@ -1,0 +1,76 @@
+.\" -*- nroff -*-
+.\"
+.\" Copyright (c) 2026 Enji Cooper <ngie@FreeBSD.org
+.\" Copyright (c) 2006 M. Warner Losh <imp@FreeBSD.org>
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 1. Redistributions of source code must retain the above copyright
+.\"    notice, this list of conditions and the following disclaimer.
+.\" 2. Redistributions in binary form must reproduce the above copyright
+.\"    notice, this list of conditions and the following disclaimer in the
+.\"    documentation and/or other materials provided with the distribution.
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS ``AS IS'' AND ANY EXPRESS OR
+.\" IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+.\" OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+.\" IN NO EVENT SHALL THE DEVELOPERS BE LIABLE FOR ANY DIRECT, INDIRECT,
+.\" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+.\" NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+.\" DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+.\" THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+.\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+.\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+.\"
+.Dd February 21, 2026
+.Dt devclass_get_sysctl 9
+.Os
+.Sh NAME
+.Nm devclass_get_sysctl_ctx ,
+.Nm devclass_get_sysctl_tree
+.Nd Device class specific sysctl manipulation routines.
+.Sh SYNOPSIS
+.In sys/param.h
+.In sys/bus.h
+.Ft "struct sysctl_ctx_list *"
+.Fn devclass_get_sysctl_ctx "devclass_t dev"
+.Ft "struct sysctl_oid *"
+.Fn devclass_get_sysctl_tree "devclass_t dev"
+.Sh DESCRIPTION
+.Xr bus 9
+automatically adds a
+.Xr sysctl 9
+node for each
+.Xr devclass 9
+in the system.
+.Pp
+The
+.Xr devclass 9
+node tree can be accessed with the
+.Fn devclass_get_sysctl_tree
+function.
+.Pp
+The context for the node can be obtained with the
+.Fn devclass_get_sysctl_ctx
+function.
+.Sh RETURN VALUES
+The
+.Fn devclass_get_sysctl_ctx
+and
+.Fn devclass_get_sysctl_tree
+functions will return a non
+.Va NULL
+value if the devclass's sysctls have been initialized.
+.Sh SEE ALSO
+.Xr devclass 9 ,
+.Xr device_get_sysctl_ctx 9 ,
+.Xr device_get_sysctl_tree 9 ,
+.Xr sysctl 9 ,
+.Sh AUTHORS
+This manual page was written by
+.An Enji Cooper .
+It was based on the
+.Xr device_get_sysctl 9
+manual page written by
+.An Warner Losh .
