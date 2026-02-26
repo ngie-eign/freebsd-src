@@ -244,6 +244,10 @@ nooptions 	DEBUG
 # Makes assumptions about bus tags that aren't true on arm64
 nodevice	snd_cmi
 
+# Apple System Management Controller (SMC)
+device		asmc
+options		ASMC_DEBUG	# Enable asmc(4)-specific debug logic.
+
 # arm64 didn't exist for these releases, so doesn't have the required compat
 # support. Just disable them because they are meaningless.
 nooptions 	COMPAT_FREEBSD4

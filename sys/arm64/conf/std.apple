@@ -7,4 +7,5 @@ options 	SOC_APPLE_T8103
 #options 	IOMMU
 options 	FDT
 
+device	asmc
 device	bge

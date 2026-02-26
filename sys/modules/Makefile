@@ -860,7 +860,6 @@ _x86bios=	x86bios
 
 .if ${MACHINE_CPUARCH} == "amd64"
 _amdgpio=	amdgpio
-_asmc=		asmc
 _ccp=		ccp
 _enic=		enic
 _iavf=		iavf
@@ -889,6 +888,7 @@ _p2sb=		p2sb
 .endif
 
 .if ${MACHINE_CPUARCH} == "aarch64" || ${MACHINE_CPUARCH} == "amd64"
+_asmc=		asmc
 _hwt=		hwt
 .endif
 

@@ -211,6 +211,8 @@ dev/acpica/acpi_pxm.c				optional acpi
 dev/acpi_support/acpi_wmi_if.m			optional acpi acpi_wmi
 dev/ahci/ahci_generic.c				optional ahci
 
+dev/asmc/asmc.c					optional acpi asmc
+
 cddl/dev/dtrace/aarch64/dtrace_asm.S		optional dtrace compile-with "${DTRACE_S}"
 cddl/dev/dtrace/aarch64/dtrace_isa.c		optional dtrace compile-with "${DTRACE_C}"
 cddl/dev/dtrace/aarch64/dtrace_subr.c		optional dtrace compile-with "${DTRACE_C}"
@@ -521,13 +523,13 @@ dev/usb/controller/dwc3/rk_dwc3.c		optional xhci fdt dwc3 rk_dwc3
 dev/thunderbolt/hcm.c		optional	thunderbolt
 dev/thunderbolt/nhi.c		optional	pci thunderbolt
 dev/thunderbolt/nhi_pci.c	optional	pci thunderbolt
-dev/thunderbolt/nhi_wmi.c	optional	thunderbolt
+dev/thunderbolt/nhi_wmi.c	optional	acpi acpi_wmi thunderbolt
 dev/thunderbolt/router.c	optional	thunderbolt
 dev/thunderbolt/tb_acpi_pcib.c	optional	acpi pci thunderbolt
 dev/thunderbolt/tb_debug.c	optional	thunderbolt
 dev/thunderbolt/tb_dev.c	optional	thunderbolt
 dev/thunderbolt/tb_if.m		optional	thunderbolt
-dev/thunderbolt/tb_pcib.c	optional	pci thunderbolt
+dev/thunderbolt/tb_pcib.c	optional	acpi pci thunderbolt
 
 dev/vnic/mrml_bridge.c				optional vnic fdt
 dev/vnic/nic_main.c				optional vnic pci
