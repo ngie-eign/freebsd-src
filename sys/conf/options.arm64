@@ -46,3 +46,6 @@ SOC_ROCKCHIP_RK3328		opt_soc.h	# Depends on SOC_ROCKCHIP
 SOC_ROCKCHIP_RK3399		opt_soc.h	# Depends on SOC_ROCKCHIP
 SOC_ROCKCHIP_RK3568		opt_soc.h	# Depends on SOC_ROCKCHIP
 SOC_XILINX_ZYNQ			opt_soc.h
+
+# Enable thunderbolt(4)-specific debug logic.
+THUNDERBOLT_DEBUG	opt_thunderbolt.h

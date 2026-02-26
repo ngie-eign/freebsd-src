@@ -517,6 +517,18 @@ dev/usb/controller/dwc3/dwc3.c			optional xhci acpi dwc3 | xhci fdt dwc3
 dev/usb/controller/dwc3/aw_dwc3.c		optional xhci fdt dwc3 aw_dwc3
 dev/usb/controller/dwc3/rk_dwc3.c		optional xhci fdt dwc3 rk_dwc3
 
+# Thunderbolt (USB 4.0) support
+dev/thunderbolt/hcm.c		optional	thunderbolt
+dev/thunderbolt/nhi.c		optional	pci thunderbolt
+dev/thunderbolt/nhi_pci.c	optional	pci thunderbolt
+dev/thunderbolt/nhi_wmi.c	optional	thunderbolt
+dev/thunderbolt/router.c	optional	thunderbolt
+dev/thunderbolt/tb_acpi_pcib.c	optional	acpi pci thunderbolt
+dev/thunderbolt/tb_debug.c	optional	thunderbolt
+dev/thunderbolt/tb_dev.c	optional	thunderbolt
+dev/thunderbolt/tb_if.m		optional	thunderbolt
+dev/thunderbolt/tb_pcib.c	optional	pci thunderbolt
+
 dev/vnic/mrml_bridge.c				optional vnic fdt
 dev/vnic/nic_main.c				optional vnic pci
 dev/vnic/nicvf_main.c				optional vnic pci pci_iov

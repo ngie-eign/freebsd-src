@@ -128,6 +128,10 @@ device		aw_usbphy		# Allwinner USB PHY
 device		dwcotg			# DWC OTG controller
 device		ehci_mv			# Marvell EHCI USB interface
 
+# Thunderbolt (USB 4.0) support
+device		thunderbolt
+options		THUNDERBOLT_DEBUG
+
 # USB ethernet support
 device		muge
 device		smsc
