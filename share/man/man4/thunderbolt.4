@@ -3,18 +3,32 @@
 .\"
 .\" SPDX-License-Identifier: BSD-2-Clause
 .\"
-.Dd October 2, 2025
+.Dd February 26, 2026
 .Dt THUNDERBOLT 4
 .Os
 .Sh NAME
 .Nm thunderbolt
-.Nd USB4 controller driver
+.Nd Thunderbolt 3 and USB4 controller driver
 .Sh SYNOPSIS
+.Bd -literal -offset indent
+.Cd # `device acpi` is required for some components.
+.Cd device pci
 .Cd device thunderbolt
+.Ed
+.Pp
+To load the driver as a
+module at boot time, place the following lines in
+.Xr loader.conf 5 :
+.Bd -literal -offset indent
+thunderbolt_load="YES"
+.Ed
 .Sh HARDWARE
 The
 .Nm
 driver supports Thunderbolt 3 and USB4 controllers.
+.Sh SEE ALSO
+.Xr acpi 4 ,
+.Xr pci 4
 .Sh HISTORY
 The
 .Nm
