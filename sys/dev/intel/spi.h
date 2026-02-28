@@ -39,6 +39,7 @@ enum intelspi_vers {
 	SPI_BRASWELL,
 	SPI_LYNXPOINT,
 	SPI_SUNRISEPOINT,
+	SPI_TITANRIDGE,
 };
 
 struct intelspi_softc {

@@ -148,6 +148,10 @@ static const struct intelspi_info {
 		.reg_lpss_base = 0x200,
 		.reg_cs_ctrl = 0x24,
 	},
+	[SPI_TITANRIDGE] = {
+		.reg_lpss_base = 0x200,
+		.reg_cs_ctrl = 0x24,
+	}
 };
 
 static void	intelspi_intr(void *);
@@ -507,9 +511,15 @@ intelspi_attach(device_t dev)
 	}
 
 	/* Release LPSS reset */
-	if (sc->sc_vers == SPI_SUNRISEPOINT)
+	switch (sc->sc_vers) {
+	case SPI_SUNRISEPOINT:
+	case SPI_TITANRIDGE:
 		INTELSPI_WRITE(sc, INTELSPI_RESETS,
 		    (INTELSPI_RESET_HOST | INTELSPI_RESET_DMA));
+		break;
+	default:
+		break;
+	}
 
 	sc->sc_irq_res = bus_alloc_resource_any(sc->sc_dev,
 	    SYS_RES_IRQ, &sc->sc_irq_rid, RF_ACTIVE | RF_SHAREABLE);
