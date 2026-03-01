@@ -506,9 +506,6 @@ acpi_pcib_read_ivar(device_t dev, device_t child, int which, uintptr_t *result)
     case ACPI_IVAR_HANDLE:
 	*result = (uintptr_t)sc->ap_handle;
 	return (0);
-    case ACPI_IVAR_FLAGS:
-	*result = (uintptr_t)sc->ap_flags;
-	return (0);
     }
     return (ENOENT);
 }
@@ -526,9 +523,6 @@ acpi_pcib_write_ivar(device_t dev, device_t child, int which, uintptr_t value)
 	return (0);
     case ACPI_IVAR_HANDLE:
 	sc->ap_handle = (ACPI_HANDLE)value;
-	return (0);
-    case ACPI_IVAR_FLAGS:
-	sc->ap_flags = (int)value;
 	return (0);
     }
     return (ENOENT);
