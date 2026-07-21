@@ -23,7 +23,7 @@ SRCS+=	fweh.c fwil.c fwvid.c p2p.c pno.c proto.c vendor.c xtlv.c
 SRCS+=	wcc/core.c cyw/core.c bca/core.c
 
 # PCI parts; PCI needs to be compiled into the kernel and cannot be loaded.
-.if defined(BRCMFMAC_PCI) && ${BRCMFMAC_PCI} > 0 && ${KERN_OPTS:MDEV_PCI}
+.if ${BRCMFMAC_PCI} != 0 && ${KERN_OPTS:MDEV_PCI}
 SRCS+=	pcie.c
 CFLAGS+=	-DCONFIG_BRCMFMAC_PCIE
 SRCS+=	msgbuf.c commonring.c flowring.c
@@ -31,7 +31,7 @@ CFLAGS+=	-DCONFIG_BRCMFMAC_PROTO_MSGBUF
 .endif
 
 # SDIO parts; SDIO depends on an MMCCAM kernel.
-.if defined(BRCMFMAC_SDIO) && ${BRCMFMAC_SDIO} > 0 && ${KERN_OPTS:MMMCCAM}
+.if ${BRCMFMAC_SDIO:U0} != 0 && ${KERN_OPTS:MMMCCAM}
 SRCS+=	sdio.c bcmsdh.c
 SRCS+=	sdio_if.h
 SRCS+=	sdiodevs.h
@@ -40,38 +40,38 @@ BRCMFMAC_PROTO_BCDC=	1
 .endif
 
 # USB parts; USB can be loaded and is unconditional on any kernel config.
-.if defined(BRCMFMAC_USB) && ${BRCMFMAC_USB} > 0
+.if ${BRCMFMAC_USB:U0} != 0
 SRCS+=	usb.c
 CFLAGS+=	-DCONFIG_BRCMFMAC_USB
 BRCMFMAC_PROTO_BCDC=	1
 .endif
 
-.if defined(BRCMFMAC_PROTO_BCDC) && ${BRCMFMAC_PROTO_BCDC} > 0
+.if ${BRCMFMAC_PROTO_BCDC:U0} != 0
 CFLAGS+=	-DCONFIG_BRCMFMAC_PROTO_BCDC
 SRCS+=	bcdc.c fwsignal.c
 .endif
 
-.if defined(BRCMFMAC_DEBUG) && ${BRCMFMAC_DEBUG} > 0
+.if ${BRCMFMAC_DEBUG:U0} != 0
 CFLAGS+=	-DDEBUG -DCONFIG_BRCMDBG
 SRCS+=	debug.c
 .endif
 
-.if defined(BRCMFMAC_TRACING) && ${BRCMFMAC_TRACING} > 0
+.if ${BRCMFMAC_TRACING:U0} != 0
 SRCS+=	tracepoint.c
 CFLAGS+=	-DCONFIG_BRCM_TRACING
 .endif
 
-.if defined(BRCMFMAC_OF) && ${BRCMFMAC_OF} > 0
+.if ${BRCMFMAC_OF:U0} != 0
 SRCS+=	of.c
 CFLAGS+=	-DCONFIG_OF
 .endif
 
-.if defined(BRCMFMAC_DMI) && ${BRCMFMAC_DMI} > 0
+.if ${BRCMFMAC_DMI:U0} != 0
 SRCS+=	dmi.c
 CFLAGS+=	-DCONFIG_DMI
 .endif
 
-.if defined(BRCMFMAC_ACPI) && ${BRCMFMAC_ACPI} > 0
+.if ${BRCMFMAC_ACPI:U0} != 0
 SRCS+=	acpi.c
 CFLAGS+=	-DCONFIG_ACPI
 .endif
