@@ -70,6 +70,7 @@ SUBDIR=	\
 	${_bios} \
 	${_blake2} \
 	${_bnxt} \
+	brcm80211 \
 	bridgestp \
 	bwi \
 	bwn \
