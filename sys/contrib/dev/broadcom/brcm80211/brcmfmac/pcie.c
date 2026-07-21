@@ -1308,10 +1308,11 @@ static int brcmf_pcie_init_ringbuffers(struct brcmf_pciedev_info *devinfo)
 
 #if defined(__linux__)
 	memcpy_fromio(&ringinfo, devinfo->tcm + devinfo->shared.ring_info_addr,
+		      sizeof(ringinfo));
 #elif defined(__FreeBSD__)
 	memcpy_fromio(&ringinfo, (void *)((uintptr_t)devinfo->tcm + devinfo->shared.ring_info_addr),
-#endif
 		      sizeof(ringinfo));
+#endif
 	if (devinfo->shared.version >= 6) {
 		max_submissionrings = le16_to_cpu(ringinfo.max_submissionrings);
 		max_flowrings = le16_to_cpu(ringinfo.max_flowrings);
