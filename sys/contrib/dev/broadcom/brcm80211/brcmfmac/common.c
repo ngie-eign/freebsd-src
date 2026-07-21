@@ -32,7 +32,9 @@ MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DEPEND(brcmfmac, brcmutil, 1, 1, 1);
 MODULE_DEPEND(brcmfmac, linuxkpi, 1, 1, 1);
 MODULE_DEPEND(brcmfmac, linuxkpi_wlan, 1, 1, 1);
-MODULE_DEPEND(brcmfmac, lindebugfs, 1, 1, 1);   /* XXX-BZ someone should fix this */
+#if defined(DEBUG) || defined(CONFIG_BRCM_TRACING) || defined(CONFIG_BRCMDBG)
+MODULE_DEPEND(brcmfmac, lindebugfs, 1, 1, 1);
+#endif
 #endif
 
 #define BRCMF_DEFAULT_SCAN_CHANNEL_TIME	40
@@ -47,10 +49,12 @@ static int brcmf_sdiod_txglomsz = BRCMF_DEFAULT_TXGLOM_SIZE;
 module_param_named(txglomsz, brcmf_sdiod_txglomsz, int, 0);
 MODULE_PARM_DESC(txglomsz, "Maximum tx packet chain size [SDIO]");
 
+#if defined(DEBUG) || defined(CONFIG_BRCM_TRACING) || defined(CONFIG_BRCMDBG)
 /* Debug level configuration. See debug.h for bits, sysfs modifiable */
 int brcmf_msg_level;
 module_param_named(debug, brcmf_msg_level, int, 0600);
 MODULE_PARM_DESC(debug, "Level of debug output");
+#endif
 
 static int brcmf_p2p_enable;
 module_param_named(p2pon, brcmf_p2p_enable, int, 0);
