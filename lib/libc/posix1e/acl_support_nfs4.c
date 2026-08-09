@@ -73,6 +73,10 @@ struct flagnames_struct a_access_masks[] =
      { ACL_MODIFY_SET, "modify_set", '\0'},
      { ACL_READ_SET, "read_set", '\0'},
      { ACL_WRITE_SET, "write_set", '\0'},
+     /* [Legacy] aliases used by Solaris forks. */
+     { ACL_ADD_FILE, "add_file", 'w'},
+     { ACL_ADD_SUBDIRECTORY, "add_directory", 'p'},
+     { ACL_LIST_DIRECTORY, "list_directory", 'r'},
      { 0, 0, 0}};
 
 static const char *
