@@ -27,10 +27,10 @@ dnl -----------------------------------------------------------------------
 dnl Initialize the GNU build system.
 dnl -----------------------------------------------------------------------
 
-AC_INIT([Automated Testing Framework], [0.22],
-        [atf-discuss@googlegroups.com], [atf],
-        [https://github.com/jmmv/atf/])
-AC_PREREQ([2.65])
+AC_INIT([Automated Testing Framework], [0.24],
+        [freebsd-testing@freebsd.org], [atf],
+        [https://github.com/freebsd/atf/])
+AC_PREREQ([2.68])
 AC_COPYRIGHT([Copyright (c) 2007-2012 The NetBSD Foundation, Inc.])
 AC_DEFINE([PACKAGE_COPYRIGHT],
           ["Copyright (c) 2007-2012 The NetBSD Foundation, Inc."],
@@ -42,11 +42,85 @@ AC_CONFIG_SRCDIR([atf-c.h])
 AC_CONFIG_TESTDIR([bootstrap])
 
 AC_CANONICAL_TARGET
+AC_USE_SYSTEM_EXTENSIONS
 
 AM_INIT_AUTOMAKE([1.9 check-news foreign subdir-objects -Wall])
 
 AM_PROG_AR
 LT_INIT
+
+pc_cflags=
+pc_cxxflags=
+pc_ldflags=
+
+AC_ARG_ENABLE([asan],
+AS_HELP_STRING([--enable-asan], [Turn on AddressSanitizer]),,
+[enable_asan=no])
+
+if test ${enable_asan} = yes; then
+    AC_MSG_NOTICE([building with AddressSanitizer (ASAN)])
+    enable_developer=yes
+    CFLAGS="${CFLAGS} -fsanitize=address"
+    pc_cflags="${pc_cflags} -fsanitize=address"
+    CXXFLAGS="${CXXFLAGS} -fsanitize=address"
+    pc_cxxflags="${pc_cxxflags} -fsanitize=address"
+    LDFLAGS="${LDFLAGS} -fsanitize=address"
+    pc_ldflags="${pc_ldflags} -fsanitize=address"
+fi
+AM_CONDITIONAL([HAVE_ASAN], [test "${enable_asan}" = yes])
+
+AC_ARG_ENABLE([code-coverage],
+AS_HELP_STRING([--enable-code-coverage], [Turn on runtime code coverage]),,
+[enable_code_coverage=no])
+
+if test ${enable_code_coverage} = yes; then
+    AC_MSG_NOTICE([building with code coverage])
+    enable_developer=yes
+    CFLAGS="${CFLAGS} --coverage"
+    pc_cflags="${pc_cflags} --coverage"
+    CXXFLAGS="${CXXFLAGS} --coverage"
+    pc_cxxflags="${pc_cxxflags} --coverage"
+    LDFLAGS="${LDFLAGS} --coverage"
+    pc_ldflags="${pc_ldflags} --coverage"
+fi
+AM_CONDITIONAL([CODE_COVERAGE], [test "${enable_code_coverage}" = yes])
+
+AC_ARG_ENABLE([lsan],
+AS_HELP_STRING([--enable-lsan], [Turn on LeakSanitizer]),,
+[enable_lsan=no])
+
+if test ${enable_lsan} = yes; then
+    AC_MSG_NOTICE([building with LeakSanitizer (LSAN)])
+    enable_developer=yes
+    CFLAGS="${CFLAGS} -fsanitize=leak"
+    pc_cflags="${pc_cflags} -fsanitize=leak"
+    CXXFLAGS="${CXXFLAGS} -fsanitize=leak"
+    pc_cxxflags="${pc_cxxflags} -fsanitize=leak"
+    LDFLAGS="${LDFLAGS} -fsanitize=leak"
+    pc_ldflags="${pc_ldflags} -fsanitize=leak"
+fi
+AM_CONDITIONAL([HAVE_LSAN], [test "${enable_lsan}" = yes])
+
+AC_ARG_ENABLE([ubsan],
+AS_HELP_STRING([--enable-ubsan], [Turn on UndefinedBehaviourSanitizer]),,
+[enable_ubsan=no])
+
+if test ${enable_ubsan} = yes; then
+    AC_MSG_NOTICE([building with UndefinedBehaviourSanitizer (UBSAN)])
+    enable_developer=yes
+    CFLAGS="${CFLAGS} -fsanitize=undefined"
+    pc_cflags="${pc_cflags} -fsanitize=undefined"
+    CXXFLAGS="${CXXFLAGS} -fsanitize=undefined"
+    pc_cxxflags="${pc_cxxflags} -fsanitize=undefined"
+    LDFLAGS="${LDFLAGS} -fsanitize=undefined"
+    pc_ldflags="${pc_ldflags} -fsanitize=undefined"
+fi
+AM_CONDITIONAL([HAVE_UBSAN], [test "${enable_ubsan}" = yes])
+
+AC_SUBST([pc_cflags])
+AC_SUBST([pc_cxxflags])
+AC_SUBST([pc_ldflags])
+
 
 dnl -----------------------------------------------------------------------
 dnl Check for the C and C++ compilers and required features.
@@ -55,30 +129,21 @@ dnl -----------------------------------------------------------------------
 AC_LANG(C)
 AC_PROG_CC
 AM_PROG_CC_C_O
+AC_PROG_CPP
 dnl The C compiler check automatically aborts if the compiler does not work.
 dnl Nothing to do here.
 
-AC_LANG(C++)
+AC_USE_SYSTEM_EXTENSIONS
+
 AC_PROG_CXX
-AC_CACHE_CHECK([whether the C++ compiler works],
-               [atf_cv_prog_cxx_works],
-               [AC_LANG_PUSH([C++])
-                AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])],
-                               [atf_cv_prog_cxx_works=yes],
-                               [atf_cv_prog_cxx_works=no])
-                AC_LANG_POP])
-if test "${atf_cv_prog_cxx_works}" = no; then
-    AC_MSG_ERROR([C++ compiler cannot create executables])
-fi
+AC_LANG_COMPILER(C++)
+AC_PROG_CPP
+AX_CXX_COMPILE_STDCXX(20, noext, mandatory)
 
 KYUA_DEVELOPER_MODE([C,C++])
 
-dnl TODO(jmmv): Remove once the atf-*-api.3 symlinks are removed.
-AC_PROG_LN_S
-
 ATF_MODULE_APPLICATION
 ATF_MODULE_DEFS
-ATF_MODULE_ENV
 ATF_MODULE_FS
 
 ATF_RUNTIME_TOOL([ATF_BUILD_CC],
@@ -142,11 +207,20 @@ dnl -----------------------------------------------------------------------
 AC_PATH_PROG([KYUA], [kyua])
 AM_CONDITIONAL([HAVE_KYUA], [test -n "${KYUA}"])
 AC_PATH_PROG([GIT], [git])
+if test x"${enable_code_coverage}" = xyes; then
+    AC_MSG_NOTICE([Checking for lcov package])
+    AC_PATH_PROG([GENHTML], [genhtml])
+    AC_PATH_PROG([LCOV], [lcov])
+    if test -z "${GENHTML}" -a -z "${LCOV}"; then
+        AC_MSG_ERROR([Please install lcov to obtain code coverage])
+    fi
+fi
 
 dnl -----------------------------------------------------------------------
 dnl Finally, generate output.
 dnl -----------------------------------------------------------------------
 
-AC_OUTPUT([Makefile atf-c/defs.h])
+AC_CONFIG_FILES([Makefile atf-c/defs.h])
+AC_OUTPUT
 
 dnl vim: syntax=m4:expandtab:shiftwidth=4:softtabstop=4

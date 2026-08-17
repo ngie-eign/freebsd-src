@@ -26,6 +26,7 @@
 atf_aclocal_DATA =
 BUILT_SOURCES =
 CLEANFILES =
+CODE_COVERAGE_DIRS =
 EXTRA_DIST =
 bin_PROGRAMS =
 dist_man_MANS =
@@ -52,9 +53,9 @@ include test-programs/Makefile.am.inc
 # Top-level distfile documents.
 #
 
-doc_DATA = AUTHORS COPYING NEWS README
-noinst_DATA += INSTALL README
-EXTRA_DIST += $(doc_DATA) INSTALL README
+doc_DATA = AUTHORS COPYING NEWS README.md
+noinst_DATA += INSTALL.md README.md
+EXTRA_DIST += $(doc_DATA) INSTALL.md README.md
 
 #
 # Supporting logic to run our custom testsuite.
@@ -62,6 +63,22 @@ EXTRA_DIST += $(doc_DATA) INSTALL README
 
 TESTS_ENVIRONMENT = PATH=$(prefix)/bin:$${PATH} \
                     PKG_CONFIG_PATH=$(prefix)/lib/pkgconfig
+
+if HAVE_ASAN
+# NB: the trailing comma is intentional. I hate automake not allowing `:=` use on subsequent lines.
+if HAVE_LSAN
+LSAN_OPTIONS = detect_leaks=1,
+else
+LSAN_OPTIONS =
+endif
+# Some of the testcases trigger false positives as they pass
+# `SIZE_MAX - 1`, etc, to malloc(3).
+ASAN_OPTIONS = ${LSAN_OPTIONS}allocator_may_return_null=1
+TESTS_ENVIRONMENT+= ASAN_OPTIONS=${ASAN_OPTIONS}
+endif
+if HAVE_UBSAN
+TESTS_ENVIRONMENT+= UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+endif
 
 # Allow the caller to override the configuration file to passed to our
 # test runs below.
@@ -73,6 +90,7 @@ pkgtestsdir = $(testsdir)/$(PACKAGE)
 PHONY_TARGETS += installcheck-kyua
 if HAVE_KYUA
 INSTALLCHECK_TARGETS += installcheck-kyua
+
 installcheck-kyua:
 	set +e; cd $(pkgtestsdir) && $(TESTS_ENVIRONMENT) \
 	    $(KYUA) --config='$(KYUA_TEST_CONFIG_FILE)' test; \
@@ -82,11 +100,39 @@ installcheck-kyua:
 	    cd $(pkgtestsdir) && $(TESTS_ENVIRONMENT) \
 		    $(KYUA) --config='$(KYUA_TEST_CONFIG_FILE)' \
 		    report-junit --output="$$JUNIT_OUTPUT"; \
-		    sed -i '' 's/encoding="iso-8859-1"/econding="utf-8"/' "$$JUNIT_OUTPUT"; \
+	    sed -i '.orig' 's/encoding="iso-8859-1"/encoding="utf-8"/' "$$JUNIT_OUTPUT"; \
+	    rm -f "$$JUNIT_OUTPUT.orig"; \
 	fi; \
 	cd $(pkgtestsdir) && $(TESTS_ENVIRONMENT) \
 		$(KYUA) --config='$(KYUA_TEST_CONFIG_FILE)' report --verbose; \
 	exit $$ret
+
+if CODE_COVERAGE
+CODE_COVERAGE_EXCLUDES = '/usr/include/*' '/usr/local/include/*'
+CODE_COVERAGE_OUTPUT_DIR ?= code_coverage
+EXTRA_GENHTML_ARGS ?=
+INSTALLCHECK_TARGETS+=	installcheck-kyua-lcov
+
+installcheck-kyua-lcov: installcheck-kyua
+	mkdir -p $(CODE_COVERAGE_OUTPUT_DIR)/html
+	$(LCOV) --capture --directory $(srcdir) \
+	    --output-file $(CODE_COVERAGE_OUTPUT_DIR)/lcov.info
+	$(LCOV) --remove $(CODE_COVERAGE_OUTPUT_DIR)/lcov.info \
+	    $(CODE_COVERAGE_EXCLUDES) \
+	    --output-file $(CODE_COVERAGE_OUTPUT_DIR)/lcov-filtered.info
+	$(GENHTML) -o $(CODE_COVERAGE_OUTPUT_DIR)/html $(EXTRA_GENHTML_ARGS) \
+	    $(CODE_COVERAGE_OUTPUT_DIR)/lcov-filtered.info
+endif
+
+endif
+
+if CODE_COVERAGE
+PHONY_TARGETS += mostlyclean-code-coverage
+mostlyclean-local: mostlyclean-code-coverage
+mostlyclean-code-coverage:
+	-for dir in $(CODE_COVERAGE_DIRS); do \
+	    find $$dir \( -name \*.gcda -or -name \*.gcno \) -delete -print; \
+	done
 endif
 
 installcheck-local: $(INSTALLCHECK_TARGETS)
@@ -113,13 +159,5 @@ clean-all:
 	GIT="$(GIT)" $(SH) $(srcdir)/admin/clean-all.sh
 
 .PHONY: $(PHONY_TARGETS)
-
-# TODO(jmmv): Remove after atf 0.22.
-install-data-hook:
-	cd $(DESTDIR)$(man3dir) && \
-	for binding in c c++ sh; do \
-	    rm -f "atf-$${binding}-api.3"; \
-	    $(LN_S) "atf-$${binding}.3" "atf-$${binding}-api.3"; \
-	done
 
 # vim: syntax=make:noexpandtab:shiftwidth=8:softtabstop=8

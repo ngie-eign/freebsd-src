@@ -78,7 +78,7 @@ find_sources() {
               -name "COPYING" -o \
               -name "ChangeLog" -o \
               -name "NEWS" -o \
-              -name "README" -o \
+              -name "README.md" -o \
               -name "TODO" -o \
               -name "*.[0-9]" -o \
               -name "*.ac" -o \
@@ -95,6 +95,7 @@ find_sources() {
               \! -path "*/atf-[0-9]*" -a \
               \! -path "*autom4te*" -a \
               -type f -a \
+              \! -name "ac_cxx_compile_stdcxx.m4" \
               \! -name "aclocal.m4" \
               \! -name "config.h" \
               \! -name "defs.h" \

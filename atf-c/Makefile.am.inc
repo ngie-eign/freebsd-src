@@ -23,6 +23,7 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+CODE_COVERAGE_DIRS+=	atf-c
 lib_LTLIBRARIES += libatf-c.la
 libatf_c_la_SOURCES = atf-c/build.c \
                       atf-c/build.h \
@@ -74,6 +75,8 @@ atf-c/atf-c.pc: $(srcdir)/atf-c/atf-c.pc.in Makefile
 	    -e 's#__CC__#$(ATF_BUILD_CC)#g' \
 	    -e 's#__INCLUDEDIR__#$(includedir)#g' \
 	    -e 's#__LIBDIR__#$(libdir)#g' \
+	    -e 's#__PC_CFLAGS__#$(pc_cflags)#g' \
+	    -e 's#__PC_LDFLAGS__#$(pc_ldflags)#g' \
 	    <$(srcdir)/atf-c/atf-c.pc.in >atf-c/atf-c.pc.tmp; \
 	mv atf-c/atf-c.pc.tmp atf-c/atf-c.pc
 

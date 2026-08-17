@@ -137,7 +137,7 @@ context_set_resfile(struct context *ctx, const char *resfile)
     else if (strcmp(resfile, "/dev/stderr") == 0)
         ctx->resfilefd = STDERR_FILENO;
     else
-        ctx->resfilefd = open(resfile, O_WRONLY | O_CREAT | O_TRUNC,
+        ctx->resfilefd = open(resfile, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC,
             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (ctx->resfilefd == -1) {
             err = atf_libc_error(errno,
@@ -648,8 +648,10 @@ atf_tc_init_pack(atf_tc_t *tc, const atf_tc_pack_t *pack,
 void
 atf_tc_fini(atf_tc_t *tc)
 {
+    atf_map_fini(&tc->pimpl->m_config);
     atf_map_fini(&tc->pimpl->m_vars);
     free(tc->pimpl);
+    tc->pimpl = NULL;
 }
 
 /*
@@ -811,8 +813,10 @@ atf_tc_set_md_var(atf_tc_t *tc, const char *name, const char *fmt, ...)
 
     if (!atf_is_error(err))
         err = atf_map_insert(&tc->pimpl->m_vars, name, value, true);
-    else
+    else {
         free(value);
+        value = NULL;
+    }
 
     return err;
 }

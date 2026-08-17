@@ -23,6 +23,8 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+CODE_COVERAGE_DIRS+=	atf-c++
+
 ATF_CXX_LIBS = libatf-c++.la libatf-c.la
 
 lib_LTLIBRARIES += libatf-c++.la
@@ -61,6 +63,8 @@ atf-c++/atf-c++.pc: $(srcdir)/atf-c++/atf-c++.pc.in Makefile
 	    -e 's#__CXX__#$(ATF_BUILD_CXX)#g' \
 	    -e 's#__INCLUDEDIR__#$(includedir)#g' \
 	    -e 's#__LIBDIR__#$(libdir)#g' \
+	    -e 's#__PC_CXXFLAGS__#$(pc_cxxflags)#g' \
+	    -e 's#__PC_LDFLAGS__#$(pc_ldflags)#g' \
 	    <$(srcdir)/atf-c++/atf-c++.pc.in >atf-c++/atf-c++.pc.tmp; \
 	mv atf-c++/atf-c++.pc.tmp atf-c++/atf-c++.pc
 
