@@ -1,0 +1,43 @@
+# This BSD makefile helps provide a deterministic means of doing a "clean"
+# vendor import of ATF.
+#
+# Recommended use:
+#
+#   % make clean
+#   % make all
+
+NO_OBJ=
+
+CC?=	cc
+CPP?=	cpp
+CXX?=	c++
+LD?=	ld
+
+WRK_ENV=        CC=${CC} \
+		CPP=${CPP} \
+		CXX=${CXX} \
+                LD=${LD} \
+
+SETENVI=	/usr/bin/env -i
+
+configure: .PHONY
+	@(cd ${.CURDIR} && ${SETENVI} \
+	    ${WRK_ENV} \
+	    ./configure \
+	    --prefix=/usr)
+
+GEN_FILES= \
+	doc/atf.7 \
+	atf-c/atf-c.pc \
+	atf-c/defs.h \
+	atf-sh/atf-sh.pc \
+
+all: .PHONY
+all: configure
+	@(cd ${.CURDIR} && ${MAKE} -f Makefile ${GEN_FILES})
+
+clean: .PHONY
+	@(cd ${.CURDIR} && ${MAKE} -f Makefile clean)
+	@(cd ${.CURDIR} && ${RM} -f ${GEN_FILES})
+
+.include <sys.mk>
