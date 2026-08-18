@@ -133,7 +133,6 @@ MLINKS+=	atf-c.3 ATF_CHECK.3 \
 		atf-c.3 atf_utils_readline.3 \
 		atf-c.3 atf_utils_redirect.3 \
 		atf-c.3 atf_utils_wait.3
-MLINKS+=	atf-c.3 atf-c-api.3  # Backwards compatibility.
 
 HAS_TESTS=
 SUBDIR.${MK_TESTS}+= tests

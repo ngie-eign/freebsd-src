@@ -1,0 +1,11 @@
+# ATF pkg-config file
+
+cc=cc
+includedir=/usr/include
+libdir=/usr/lib
+
+Name: atf-c
+Description: Automated Testing Framework (C binding)
+Version: 0.24
+Cflags: -I${includedir} 
+Libs: -L${libdir} -latf-c 

@@ -66,15 +66,11 @@ TESTS=		tests.7
 TESTSPACKAGE=	tests
 
 ATF=		atf.7
+ATF=		atf-test-case.7
 ATFPACKAGE=	atf
 
 ATFPATH=	${SRCTOP}/contrib/atf
 .PATH:	${ATFPATH}/doc
-
-CLEANFILES+= atf.7
-atf.7: atf.7.in
-	sed -e 's,__DOCDIR__,/usr/share/doc/atf,g' \
-	    <"${ATFPATH}/doc/atf.7.in" >atf.7
 .endif
 
 .include <bsd.prog.mk>
