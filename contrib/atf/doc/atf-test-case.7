@@ -223,6 +223,14 @@ The value can have a size suffix such as
 or
 .Sq T
 to make the amount of bytes easier to type and read.
+.It require.kmods
+Type: textual.
+Optional.
+.Pp
+A whitespace separated list of kernel modules that must be present to
+execute the test case.
+If any of the required kernel modules is not found, the test case is
+.Em skipped .
 .It require.progs
 Type: textual.
 Optional.
