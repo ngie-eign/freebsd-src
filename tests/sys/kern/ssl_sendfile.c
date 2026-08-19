@@ -145,7 +145,7 @@ common_init(struct ctx *c)
 	 * Connect client.
 	 */
 	c->ctx = SSL_CTX_new(TLS_client_method());
-	ATF_REQUIRE(c->ctx != NULL));
+	ATF_REQUIRE(c->ctx != NULL);
 	ATF_REQUIRE(X509_STORE_add_cert(SSL_CTX_get_cert_store(c->ctx),
 	    c->cert));
 	ssl = c->cln = SSL_new(c->ctx);
