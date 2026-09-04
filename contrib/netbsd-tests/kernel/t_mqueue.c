@@ -107,6 +107,9 @@ ATF_TC_HEAD(mqueue, tc)
 
 	atf_tc_set_md_var(tc, "timeout", "3");
 	atf_tc_set_md_var(tc, "descr", "Checks mqueue send/receive");
+#ifdef __FreeBSD__
+	atf_tc_set_md_var(tc, "require.kmods", "mqueuefs");
+#endif
 }
 
 ATF_TC_BODY(mqueue, tc)
@@ -115,10 +118,6 @@ ATF_TC_BODY(mqueue, tc)
 	char *tmpdir;
 	char template[32];
 	char mq_name[64];
-
-#ifdef __FreeBSD__
-	ATF_REQUIRE_KERNEL_MODULE("mqueuefs");
-#endif
 
 	strlcpy(template, "./t_mqueue.XXXXXX", sizeof(template));
 	tmpdir = mkdtemp(template);

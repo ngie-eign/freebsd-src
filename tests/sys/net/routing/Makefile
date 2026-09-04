@@ -19,6 +19,4 @@ TEST_METADATA+=	is_exclusive=true
 TEST_METADATA.test_routing+= execenv="jail" \
 			execenv_jail_params="vnet"
 
-CFLAGS+=	-I${.CURDIR:H:H:H}
-
 .include <bsd.test.mk>

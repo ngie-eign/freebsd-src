@@ -128,7 +128,6 @@ NETBSD_ATF_TESTS_C+=	lockf_test
 NETBSD_ATF_TESTS_C+=	mqueue_test
 NETBSD_ATF_TESTS_C+=	sysv_test
 
-CFLAGS.mqueue_test+=	-I${SRCTOP}/tests
 LIBADD.mqueue_test+=	rt
 LIBADD.tty_pts+=	util
 
